@@ -1,0 +1,3807 @@
+#!/boot/home/config/bin/yab
+// JABA - Just Another Burning App - a GUI for cdrecord, mkisofs, readcd, cdda2wav and many more applications.
+// by DasJott@team-maui.de
+localize
+// Main-color:
+r = 220 : g = 220 : b = 220
+VersNum$		= "b9.03"
+AppName$		= "JABA "+VersNum$+" "+translate$("for")+" ZETA"
+
+ThisDir$			= "/boot/home/JABA" // peek$("directory")
+TempDir$		= "/boot/var/tmp/JABA_TMP"
+SecTempDir$	= "/boot/var/tmp/JABA_TMP2"
+TempImage$	= "/boot/var/tmp/JABA_TempImageFile"
+TempVidCue$	= "/boot/var/tmp/JABA_TempVideo.cue"
+AudioInfFiles$	= "/boot/var/tmp/JABA_Audio_Info"
+CdrecordLog$	= "/boot/var/tmp/Cdrecord_LogFile"
+_HelpFile$		= ThisDir$+"/JABA-Help"
+User_home$	= trim$(system$("echo $HOME"))
+D				= 1
+FD				= 1
+
+dim cds$(1)
+dim info$(1)
+dim file$(1)
+dim item$(1)
+dim cmd$(1)
+dim line$(1)
+dim name$(1)
+dim m$(1)
+dim drop$(1)
+dim dropp$(1)
+dim kind$(1)
+n = 10
+dim FileToBurn$(n)
+dim NewFile$(n)
+dim DroppedFile$(n, n)
+dim ListItem$(n, n)
+dim FileName$(n, n)
+dim AudioTmp$(n)
+dim DataTmp$(n)
+dim Folder$(n)
+dim F(n)
+
+if (not system("test -e /boot/var/tmp/JABA_*")) RmErr = system("rm -rf /boot/var/tmp/JABA_*")
+mkdir = system("mkdir "+TempDir$)
+
+ScreenX = peek("desktopwidth")
+ScreenY = peek("desktopheight")
+print "0"
+LookForDrives()
+print "A"
+LoadSettings(User_home$+"/config/settings/JABA.settings")
+if (system("test -d \""+ProjectsDir$+"\"")) MkErr = system("mkdir \""+ProjectsDir$+"\"")
+if (system("test -e \""+ThisDir$+"/Projects\"") and mklink = 1) LnErr = system("ln -s \""+ProjectsDir$+"\" \""+ThisDir$+"/Projects\"")
+
+
+NumArg = peek("argument")
+if (NumArg = 1) then
+	is_project = true
+	Project_to_load$ = peek$("argument")
+	if (system("test -e \""+Project_to_load$+"\"")) then
+		is_project = false
+		if (not system("test -e \""+ThisDir$+Project_to_load$+"\"")) then
+			Project_to_load$ = ThisDir$+Project_to_load$
+			is_project = true
+		fi
+	fi
+	if (is_project and not instr(system$("catattr 'JABA:project' \""+Project_to_load$+"\""), ": jaba/project")) is_project = false
+elsif (NumArg > 1) then
+	print "\nSorry, too many arguments\n\tusage:\n\tJABA <projectfile>\n"
+	exit
+fi
+
+	GUITheme$ = "Standard"
+	OpenMainWindow()
+	DrawMode("Welcome to JABA!")
+	view 1, 86 to 269, 150, "InBoxView", "MainView"
+		draw set "bgcolor", r, g, b, "InBoxView"
+		draw set "Swis721 BT, Roman, 14", "InBoxView"
+		draw text 10, 38, "Please select a mode!", "InBoxView"
+		draw text 3, 13, translate$("Path")+": ./", "PathView"
+		DrawStatus()
+		DisplayDriveInfo()
+		window show "MainView"
+		sleep 0.01
+
+if (tooltips = 1) then
+	tooltip "Back_", "One directory up"
+	tooltip "NewFolder_", "Create new folder"
+	tooltip "Play_", "Play soundfile"
+	tooltip "Up_", "Move selected file up"
+	tooltip "Down_", "Move selected file down"
+	tooltip "Remove_", "Remove selected file from list"
+	tooltip "StatusBarView", "Shows used space on the disc to be burned"
+	tooltip "PathView", "Shows the path you're watching the content of"
+	tooltip "ListView", "Please drop files/folders here to get them into the list"
+	tooltip "DummyMode", "Execute burning with laser turned off"
+	tooltip "WantBurn_", "Burn project"
+	tooltip "CheckDisk_", "Check the disc to be burned"
+fi
+
+if (is_project) LoadProject(Project_to_load$)
+
+inloop = true
+while (inloop)
+	msg$ = message$
+	dropnr = split(msg$, drop$(), "|")
+	msgnr = split(msg$, cmd$(), ":|")
+	if (msgnr > 2) choice$ = cmd$(2)
+	if (msgnr > 3) dropped$ = cmd$(3)
+	if (dropnr > 1) then
+		if (not CDType$ = "") then
+			initnr = dropnr+F(D)
+			ArraySizes(initnr)
+			for MSG = 1 to dropnr
+				if (split(drop$(MSG), dropp$(), ":") = 3) NewFile$(dropnr-MSG) = dropp$(3)
+			next MSG
+		fi
+	fi
+		
+	if (instr(msg$, ":_Dropped:")) then
+		if (instr(system$("catattr 'JABA:project' \""+dropped$+"\""), ": jaba/project")) then
+			if (F(1) > 0 and Changed) then
+				if (alert translate$("_Save_Or_Not"), "Go on", "Back", "", "idea" = 2) break
+			fi
+			OpenProject$ = dropped$
+			CurrentProject$ = OpenProject$
+			LoadProject(OpenProject$)
+		else
+			if (CDType$ = "") then									// if no mode is selected
+				if (dropnr = 2 and upper$(right$(dropped$, 4)) = ".CUE") then
+	 				BurnCueFile$ = dropped$
+					CheckCueFile(dropped$)
+					if (BurnCue) msg$ = "BurnDroppedCueFile"
+				else
+					alert "Please select a mode first.", "OK", 1			// give an alert
+				fi
+			else
+				CueAlertAns = 3
+				if (F(1) = 0) then
+					if (upper$(right$(dropped$, 4)) = ".CUE") then
+			 			BurnCueFile$ = dropped$
+						CheckCueFile(BurnCueFile$)
+						if (BurnCue) then
+							CueAlertAns = alert "Do you like to handle this CUE file as such or insert it like a regular file?", "Cancel", "Burn CUE", "Insert", "idea"
+						else
+							CueAlertAns = 3
+						fi
+					fi
+				fi
+				if (CueAlertAns = 2) then
+					msg$ = "BurnDroppedCueFile"
+				elsif (CueAlertAns = 3) then
+					OpenBurnStateWindow(220, 65)
+					button 5, 40 to 215, 60, "CancelDrop_", "Cancel", "BurnStateView"
+					for MSG = 1 to dropnr-1
+						msg$ = message$
+						if (msg$ = "CancelDrop_|") break
+						NewFile$ = NewFile$(MSG)
+						double = false
+						if (CDType$ = "Audio" and not instr(system$("catattr BEOS:TYPE \""+NewFile$+"\""), ": string : audio/")) then
+							draw flush "BurnStateView"
+							draw text 10, 25, "No Audiofile!", "BurnStateView"
+							sleep 0.8 : draw flush "BurnStateView"
+							double = true
+						elsif (CDType$ = "Video" and not instr(system$("catattr BEOS:TYPE \""+NewFile$+"\""), ": string : video/")) then
+							draw flush "BurnStateView"
+							draw text 10, 25, "No Videofile!", "BurnStateView"
+							sleep 0.8 : draw flush "BurnStateView"
+							double = true
+						fi
+						if (not double) then
+							name = split(NewFile$, file$(), "/")
+							NewFileName$ = file$(name)
+							for df = 1 to F(D)							// preserve double file entries
+								if (NewFileName$ = FileName$(D, df)) then
+									double = true
+									break
+								fi
+							next df
+						fi
+						if (double = true) then
+							initnr = initnr-1
+						elsif (double = false) then
+							draw flush "BurnStateView"
+							draw text 10, 25, "Adding items ...", "BurnStateView"
+							AnalyseDropped()
+						fi
+						if (msg$ = "CancelDrop_|") break
+					next MSG
+					window close "BurnStateView"
+					BurnStateWin = false
+				fi
+			fi
+		fi
+	fi	
+
+
+	switch msg$
+
+		case translate$("MainView:File:New project")+"|"
+		case ":"+translate$("New project")+"|"
+			if (F(1) > 0 and Changed) then
+				if (alert translate$("_Save_Or_Not"), "Go on", "Back", "", "idea" = 2) break
+			fi
+			columnbox clear "ListView"
+			CleanUpJaba()
+			DrawStatus()
+			draw flush "PathView"
+			draw text 3, 13, translate$("Path")+": ./", "PathView"
+			break
+
+		case translate$("MainView:File:Open project")+"|"
+		case ":"+translate$("Open project")+"|"
+			if (F(1) > 0 and Changed) then
+				if (alert translate$("_Save_Or_Not"), "Go on", "Back", "", "idea" = 2) break
+			fi
+			OpenProject$ = ""
+			OpenProject$ = filepanel load$ ProjectsDir$
+			if (OpenProject$ = "") break
+			CurrentProject$ = OpenProject$
+			LoadProject(OpenProject$)
+			break
+
+		case "SaveButt_|"
+		case translate$("MainView:File:Save project")+"|"
+		case ":"+translate$("Save project")+"|"
+			if (F(1) = 0) break
+			if (ProjectNamed) then
+				SaveProject(CurrentProject$)
+				Changed = false
+				break
+			fi
+
+		case translate$("MainView:File:Save project as")+"|"
+		case ":"+translate$("Save project as")+"|"
+			if (F(1) = 0) break
+			SaveProject$ = ""
+			SaveProject$ = filepanel save$ ProjectsDir$, ProjectName$
+			if (SaveProject$ = "") break
+			ProjectNamed = false
+			SaveProject(SaveProject$)
+			CurrentProject$ = SaveProject$
+			Changed = false
+			break
+
+		case "CrtImgButt_|"
+		case translate$("MainView:Image:Create image")+"|"
+		case ":"+translate$("Create image")+"|"
+			if (CDType$ = "Audio") then
+				alert "JABA can not create audio images.\nPlease change the mode.", "OK", 1
+				break
+			fi
+			if (F(D) = 0) then
+				alert "Please drop some files into the window first.", "OK", 1
+				break
+			fi
+			PreviousMode$ = CurrentMode$
+			DrawMode("Create image")
+			CreateImgFile$ = ""
+			CreateImgFile$ = filepanel save$ "boot/home", "Imagefile.iso"
+			if (CreateImgFile$ <> "") then
+				filenum = split(CreateImgFile$, file$(), "/")
+				CreateImgFileName$ = file$(filenum)
+				CreateImgFile$ = "\""+CreateImgFile$+"\""
+				if (CDType$ = "Data") OpenBurnWindow("CreateImage")
+				if (CDType$ = "Video") OpenBurnWindow("VideoImage")
+			fi
+			DrawMode(PreviousMode$)
+			break
+
+		case translate$("MainView:Image:Read disc image")+"|"
+		case ":"+translate$("Read disc image")+"|"
+		case "ReadImage_|"
+			PreviousMode$ = CurrentMode$
+			DrawMode("Read disc image")
+			ReadImgFile$ = filepanel save$ User_home$, "Imagefile.iso"
+			if (not ReadImgFile$ = "") OpenBurnWindow("ReadImage")
+			DrawMode(PreviousMode$)
+			break
+
+		case translate$("MainView:Image:Burn image")+"|"
+		case ":"+translate$("Burn image")+"|"
+			PreviousMode$ = CurrentMode$
+			DrawMode("Burn image")
+			BurnImgFile$ = ""
+			BurnImgFile$ = filepanel load$ User_home$
+			if (not BurnImgFile$ = "") then
+				filenum = split(BurnImgFile$, file$(), "/")
+				BurnImgFileName$ = file$(filenum)
+				BurnImgFile$ = "\""+BurnImgFile$+"\""
+				OpenBurnWindow("Image")
+			fi
+			DrawMode(PreviousMode$)
+			break
+
+		case "BurnDroppedCueFile"
+		case translate$("MainView:Image:Burn cuefile")+"|"
+		case ":"+translate$("Burn cuefile")+"|"
+			PreviousMode$ = CurrentMode$
+			DrawMode("Burn cuefile")
+			if (msg$ <> "BurnDroppedCueFile") then
+				BurnCueFile$ = ""
+				BurnCueFile$ = filepanel load$ User_home$
+			fi
+			if (not BurnCueFile$ = "") then
+				CheckCueFile(BurnCueFile$)
+				if (BurnCue) then
+					filenum = split(BurnCueFile$, file$(), "/")
+					BurnCueFileName$ = file$(filenum)
+					BurnCueFile$ = "\""+BurnCueFile$+"\""
+					OpenBurnWindow("CueFile")
+				else
+					if (infpopp = 1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+CueErrAlertOpen$+CueErrAlertInfo$+CueErrAlertRead$+"\" and type=\"int8(2)\" and iconRef=\"file("+ThisDir$+"/JABA)\" &")
+					alert CueErrAlertOpen$+CueErrAlertInfo$+CueErrAlertRead$, "OK", 3
+				fi
+			fi
+			DrawMode(PreviousMode$)
+			break
+
+		case translate$("MainView:Disc:Blank disc")+"|"
+		case ":"+translate$("Blank disc")+"|"
+			PreviousMode$ = CurrentMode$
+			DrawMode("Blank disc")
+			OpenBurnWindow("Blank")
+			if (GUITheme$ = "OldGUI") break
+			DrawMode(PreviousMode$)
+			break
+
+		case translate$("MainView:Disc:Copy disc")+"|"
+		case ":"+translate$("Copy disc")+"|"
+		case "CopyCD_|"
+			PreviousMode$ = CurrentMode$
+			DrawMode("Copy disc")
+			OpenBurnWindow("Copy")
+			DrawMode(PreviousMode$)
+			break
+
+		case translate$("MainView:Disc:Fixate disc")+"|"
+		case ":"+translate$("Fixate disc")+"|"
+			PreviousMode$ = CurrentMode$
+			DrawMode("Fixate disc")
+			OpenBurnWindow("Fixate")
+			DrawMode(PreviousMode$)
+			break
+
+		case translate$("MainView:Settings:Burner device")+"|"
+		case ":"+translate$("Burner device")+"|"
+			OpenSettings("Devices", 300, 200)
+			break
+
+		case translate$("MainView:Settings:Cdrecord options")+"|"
+		case ":"+translate$("Cdrecord options")+"|"
+			OpenSettings("CdrecordOptions", 300, 200)
+			break
+
+		case translate$("MainView:Settings:CD filesystem")+"|"
+		case ":"+translate$("CD filesystem")+"|"
+			OpenSettings("FileSystems", 300, 150)
+			break
+
+		case translate$("MainView:Settings:DVD filesystem")+"|"
+		case ":"+translate$("DVD filesystem")+"|"
+			OpenSettings("DVDSystems", 300, 150)
+			break
+
+		case translate$("MainView:Settings:Video disk type")+"|"
+		case ":"+translate$("Video disk type")+"|"
+			OpenSettings("VideoDiskType", 300, 200)
+			break
+
+		case translate$("MainView:Settings:Interface")+"|"
+		case ":"+translate$("Interface")+"|"
+			OpenSettings("Interface", 300, 200)
+			break
+
+		case translate$("MainView:Settings:Other")+"|"
+		case ":"+translate$("Other")+"|"
+			OpenSettings("Other", 300, 200)
+			break
+
+		case translate$("MainView:List:Remove all")+"|"
+		case ":"+translate$("Remove all")+"|"
+			columnbox clear "ListView"
+			if (not system("test -d "+TempDir$)) err = system("rm -rf "+TempDir$+"/*")
+			D = 1 : F(D) = 0 : SelItem$ = ""
+			DrawStatus()
+			draw flush "PathView"
+			draw text 3, 13, translate$("Path")+": ./", "PathView"
+			break
+
+		case translate$("MainView:Help:JABA-Help")+"|"
+		case translate$("JABA-Help")+"|"
+			Tracker = system("/boot/beos/system/Tracker \""+_HelpFile$+"\" &")
+			break
+
+		case translate$("MainView:Help:Introduction")+"|"
+		case ":"+translate$("Introduction")+"|"
+			alert AppName$+"\njust another burning application\n\n"+translate$("_Info_Text")+"\n\nwww.team-maui.de","Impressive!",1
+			break
+
+		case translate$("MainView:Help:About JABA")+"|"
+		case ":"+translate$("About JABA")+"|"
+			AboutWindow()
+			break
+
+		case "ListView:_Select:"+dropped$+"|"
+			SelIcon$ = columnbox get$ "ListView", " ", val(dropped$)
+			SelItem$ = columnbox get$ "ListView", "Name", val(dropped$)
+			SelItem$ = left$(SelItem$, len(SelItem$)-1)
+			SelNum = val(dropped$)+1
+			break
+
+		case "ListView:_Invoke:"+dropped$+"|"
+		case "Play_|"
+			if (SelItem$ = "") break
+			if (SelIcon$ = "_Icon=_File") then
+				if (CDType$ = "Audio" or CDType$ = "Video") then
+					Tracker = system("/boot/beos/system/Tracker \""+AudioTmp$(SelNum)+"\" &")
+				elsif (CDType$ = "Data") then
+					Tracker = system("/boot/beos/system/Tracker \""+TempDir$+Folder$(D)+"/"+SelItem$+"\" &")
+				fi
+			elsif (SelIcon$ = "_Icon=_Folder") then
+				D = D+1
+				OpenSubFolder(SelItem$)
+			fi
+			break
+
+		case "CheckDisk_|"
+			OpenBurnStateWindow(220, 50)
+			draw text 10, 30, "Check disc ...", "BurnStateView"
+			GetDiskInfo()
+			if (DiskInfoResult$ = "Multisession disc") then
+				if (CDType$ = "Data" or CDType$ = "DVD") then
+					musess = 1
+					checkbox set "MultiSession", 1
+					option set "BootImage", "enable", "false"
+				fi
+			fi
+			draw flush "BurnStateView"
+			draw text 10, 30, translate$(DiskInfoResult$), "BurnStateView"
+			sleep 1.5
+			window close "BurnStateView"
+			BurnStateWin = false
+			break
+
+		case "Back_|"
+			D = D-1
+			OpenSubFolder(Folder$(D))
+			break
+
+		case "NewFolder_|"
+			CreateNewFolder()
+			break
+
+		case "Up_|"
+			if (SelNum = 1 or SelItem$ = "") break
+			SortFileUp(SelNum)
+			break
+
+		case "Down_|"
+			if (SelNum = F(D) or SelItem$ = "") break
+			SortFileDown(SelNum)
+			break
+
+		case "Remove_|"
+			if (SelItem$ = "") break
+			RemoveItem(SelItem$, SelNum)
+			break
+
+		case "NewFolderName:"+choice$+"|"
+		case "NewFolderOK_|"
+			NewFolderName$ = textcontrol get$ "NewFolderName"
+			if (split(NewFolderName$, item$(), ":") > 1) break
+			if (NewFolderName$ = "") then
+				window close "BurnStateView"
+				break
+			fi
+			if (system("mkdir \""+TempDir$+Folder$(D)+"/"+NewFolderName$+"\"")) then
+				alert "Error creating folder!", "OK", 3
+				window close "BurnStateView"
+				break
+			else
+				F(D) = F(D)+1												// Number of Files, the pure Number (in directoryNr)
+				ArraySizes(initnr+F(D))
+				DroppedFile$(D, F(D)) = Folder$(D)+"/"+NewFolderName$			// DroppedFile = File with full original path
+				FileName$(D, F(D)) = NewFolderName$							// FileName = Just the Filename(directorynr, filenr)
+				ListItem$(D,F(D)) = "D  "+FileName$(D, F(D))
+				DataTmp$(F(D)) = TempDir$+Folder$(D)+"/"+FileName$(D, F(D))	// How the Folder is saved.
+				ItemAdd(ListItem$(D,F(D)), F(D)-1)
+				window close "BurnStateView"
+			fi
+			break
+
+		case "NewFolderCancel_|"
+			window close "BurnStateView"
+			break
+
+		case "AudioCD_|"
+		case translate$("CdType:Audio disc")+"|"
+		case ":"+translate$("Audio disc")+"|"
+			if (CDType$ = "Audio") break
+			if (F(1) > 0 and Changed) then
+				if (alert translate$("_Save_Or_Not"), "Go on", "Back", "", "idea" = 2) break
+			fi
+			window hide "MainView"
+			view remove "InBoxView"
+			AudioCdOptions()
+			window show "MainView"
+			break
+
+		case "DataCD_|"
+		case translate$("CdType:Data disc")+"|"
+		case ":"+translate$("Data disc")+"|"
+			if (CDType$ = "Data") break
+			if (F(1) > 0 and Changed) then
+				if (alert translate$("_Save_Or_Not"), "Go on", "Back", "", "idea" = 2) break
+			fi
+			window hide "MainView"
+			view remove "InBoxView"
+			DiscType$ = "CD"
+			DataCdOptions()
+			window show "MainView"
+			break
+
+		case "BurnImage_|"
+			if (CDType$ = "ImageMode") break
+			if (F(1) > 0 and Changed) then
+				if (alert translate$("_Save_Or_Not"), "Go on", "Back", "", "idea" = 2) break
+			fi
+			window hide "MainView"
+			view remove "InBoxView"
+			ImageOptions()
+			window show "MainView"
+			break
+
+
+		case "DVD_|"
+		case translate$("CdType:DVD")+"|"
+		case ":"+translate$("DVD")+"|"
+			if (CDType$ = "DVD") break
+			if (F(1) > 0 and Changed) then
+				if (alert translate$("_Save_Or_Not"), "Go on", "Back", "", "idea" = 2) break
+			fi
+			window hide "MainView"
+			view remove "InBoxView"
+			DiscType$ = "DVD"
+			DVDOptions()
+			window show "MainView"
+			sleep 0.1
+			DrawStatus()
+			break
+
+		case "VideoCD_|"
+		case translate$("CdType:Video disc")+"|"
+		case ":"+translate$("Video disc")+"|"
+			if (CDType$ = "Video") break
+			if (F(1) > 0 and Changed) then
+				if (alert translate$("_Save_Or_Not"), "Go on", "Back", "", "idea" = 2) break
+			fi
+			window hide "MainView"
+			view remove "InBoxView"
+			VideoCdOptions()
+			window show "MainView"
+			break
+
+		case "CopyProtect:ON|"
+			copyprot = 1
+			break
+
+		case "CopyProtect:OFF|"
+			copyprot = 0
+			break
+
+		case "MultiSession:ON|"
+			musess = 1
+			option set "BootImage", "enable", "false"
+			break
+
+		case "MultiSession:OFF|"
+			musess = 0
+			option set "BootImage", "enable", "true"
+			break
+
+		case "BootImage:ON|"
+			BootImageFile$ = ""
+			BootImageFile$ = filepanel load$ User_home$
+			if (BootImageFile$ = "") then
+				checkbox set "BootImage", 0
+				break
+			fi
+			option set "MultiSession", "enable", "false"
+			filenum = split(BootImageFile$, file$(), "/")
+			BootImageName$ = file$(filenum)
+			BootImageFile$ = " "+BootImageFile$
+			bootimg = 1
+			break
+
+		case "BootImage:OFF|"
+			BootImageFile$ = "" : BootImageName$ = ""
+			bootimg = 0
+			option set "MultiSession", "enable", "true"
+			break
+
+		case "ProjectName:"+choice$+"|"
+			ProjectName$ = choice$
+			break
+
+		case "DummyMode:ON|"
+			dummy = 1
+			break
+
+		case "DummyMode:OFF|"
+			dummy = 0
+			break
+
+		case "WantBurn_|"
+			OpenBurnWindow(CDType$)
+			break
+
+		case translate$("MainView:File:Quit")+"|"
+		case ":"+translate$("Quit")+"|"
+		case "MainView:_QuitRequested|"
+			if (F(1) > 0 and Changed) then
+				if (alert translate$("_Save_Or_Not"), "Quit", "Back", "", "idea" = 2) break
+			fi
+			inloop = false
+			break
+	end switch
+
+	if (CDType$ <> "") then
+		if (textcontrol get$ "ProjectName" <> ProjectName$) then
+			ProjectName$ = textcontrol get$ "ProjectName"
+			Changed = true
+		fi
+	fi
+
+	if (BURNBTN$ = "YES") then
+		option set "WantBurn_", "enable", "true"
+		option set "SaveButt_", "enable", "true"
+		if (CDType$ <> "Audio") option set "CrtImgButt_", "enable", "true"
+		BURNBTN$ = "???"
+	elsif (BURNBTN$ = "NO") then
+		option set "WantBurn_", "enable", "false"
+		option set "SaveButt_", "enable", "false"
+		option set "CrtImgButt_", "enable", "false"
+		BURNBTN$ = "???"
+	fi
+	sleep 0.01
+wend
+if (F(1) > 0) then 
+	OpenBurnStateWindow(200, 50)
+	draw text 10, 30, "Clear things up ...", "BurnStateView"
+fi
+SaveSettings()
+if (not system("test -e /boot/var/tmp/JABA_*")) RmErr = system("rm -rf /boot/var/tmp/JABA_* &")
+if (BurnStateView) window close "BurnStateView"
+exit
+
+sub ArraySizes(NewSize)
+	dim F(NewSize+2)
+	dim NewFile$(NewSize+2)
+	dim DroppedFile$(NewSize+2, NewSize+2)
+	dim ListItem$(NewSize+2, NewSize+2)
+	dim FileName$(NewSize+2, NewSize+2)
+	dim AudioTmp$(NewSize+2)
+	dim DataTmp$(NewSize+2)
+	dim Folder$(NewSize+2)
+	dim FileSize$(NewSize+2, NewSize+2)
+
+	return
+end sub
+
+sub CleanUpJaba()
+	PrevBurnStateWin = BurnStateWin
+	if (F(1) > 0 and not BurnStateWin) then
+		OpenBurnStateWindow(200, 50)
+		draw text 10, 30, "Clear things up ...", "BurnStateView"
+	fi
+	columnbox clear "ListView"
+	if (not system("test -e /boot/var/tmp/JABA_*")) RmErr = system("rm -rf /boot/var/tmp/JABA_*")
+	mkdir = system("mkdir "+TempDir$)
+	D = 1 : FD = 0 : F(D) = 0 : UsedSize = 0
+	SelItem$ = "" : CurrentProject$ = "" : OldFolder$ = ""
+	ProjectNamed = false
+	bootimg = 0 : BootImageFile$ = "" : BootImageName$ = ""
+	if (BurnStateWin and not PrevBurnStateWin) then
+		window close "BurnStateView"
+		BurnStateWin = false
+	fi
+	return
+end sub
+
+sub OpenMainWindow()
+	window open MainWinX, MainWinY to MainWinX+600, MainWinY+370, "MainView", "JABA"
+	window set "minimumto", 600, 370, "MainView"
+	if (fullwidth = 0) window set "flags", "not-h-resizable", "MainView"
+	window hide "MainView"
+	window set "bgcolor", r, g, b, "MainView"
+	menu "File", "New project", "N", "MainView"
+	menu "File", "Open project", "O", "MainView"
+	menu "File", "--", "", "MainView"
+	menu "File", "Save project", "S", "MainView"
+	menu "File", "Save project as", "P", "MainView"
+	menu "File", "--", "", "MainView"
+	menu "File", "Quit", "Q", "MainView"
+	menu "Image", "Create image", "", "MainView"
+	menu "Image", "Read disc image", "", "MainView"
+	menu "Image", "--", "", "MainView"
+	menu "Image", "Burn image", "", "MainView"
+	menu "Image", "Burn cuefile", "", "MainView"
+	menu "Disc", "Blank disc", "", "MainView"
+	menu "Disc", "Copy disc", "", "MainView"
+	menu "Disc", "--", "", "MainView"
+	menu "Disc", "Fixate disc", "", "MainView"
+	menu "List", "Remove all", "", "MainView"
+	menu "Settings", "Burner device", "B", "MainView"
+	menu "Settings", "Cdrecord options", "C", "MainView"
+	menu "Settings", "--", "", "MainView"
+	menu "Settings", "CD filesystem", "", "MainView"
+	menu "Settings", "DVD filesystem", "", "MainView"
+	menu "Settings", "Video disk type", "", "MainView"
+	menu "Settings", "--", "", "MainView"
+	menu "Settings", "Interface", "G", "MainView"
+	menu "Settings", "Other", "M", "MainView"
+	menu "Help", "Introduction", "I", "MainView"
+	menu "Help", "JABA-Help", "H", "MainView"
+	menu "Help", "About JABA", "A", "MainView"
+
+//	MenuH = peek("menuheight")
+
+	// Iconbar
+	layout "left, top", "MainView"
+	draw set "lowcolor", 220, 220, 220, "MainView"
+	draw rect 0, 0 to 600, 55, "MainView"
+	button image 5,20, "AudioCD_", ThisDir$+"/Icons/AudioCDEP.png", ThisDir$+"/Icons/AudioCDE.png", ThisDir$+"/Icons/AudioCDE.png", "MainView"
+	button image 55,20, "DataCD_", ThisDir$+"/Icons/DataCDEP.png", ThisDir$+"/Icons/DataCDE.png", ThisDir$+"/Icons/DataCDE.png", "MainView"
+	button image 105,20, "VideoCD_", ThisDir$+"/Icons/VideoCDEP.png", ThisDir$+"/Icons/VideoCDE.png", ThisDir$+"/Icons/VideoCDE.png", "MainView"
+	button image 155,20, "DVD_", ThisDir$+"/Icons/DVDEP.png", ThisDir$+"/Icons/DVDE.png", ThisDir$+"/Icons/DVDE.png", "MainView"
+	button image 205,20, "BurnImage_", ThisDir$+"/Icons/BrnImageEP.png", ThisDir$+"/Icons/BrnImageE.png", ThisDir$+"/Icons/BrnImageE.png", "MainView"
+	button image 255,20, "ReadImage_", ThisDir$+"/Icons/MkImageEP.png", ThisDir$+"/Icons/MkImageE.png", ThisDir$+"/Icons/MkImageE.png", "MainView"
+	button image 305,20, "CopyCD_", ThisDir$+"/Icons/CopyEP.png", ThisDir$+"/Icons/CopyE.png", ThisDir$+"/Icons/CopyE.png", "MainView"
+
+	button image 369, 20, "CheckDisk_", ThisDir$+"/Icons/CDinfoEP.png", ThisDir$+"/Icons/CDinfoE.png", ThisDir$+"/Icons/CDinfoD.png", "MainView"
+
+	button image 431,20, "SaveButt_", ThisDir$+"/Icons/SaveEP.png", ThisDir$+"/Icons/SaveE.png", ThisDir$+"/Icons/SaveD.png", "MainView"
+	button image 485, 20, "CrtImgButt_", ThisDir$+"/Icons/CrtImageEP.png", ThisDir$+"/Icons/CrtImageE.png", ThisDir$+"/Icons/CrtImageD.png", "MainView"
+
+	button image 550,20, "WantBurn_", ThisDir$+"/Icons/BurnEP.png", ThisDir$+"/Icons/BurnE.png", ThisDir$+"/Icons/BurnD.png", "MainView"
+	option set "WantBurn_", "enable", "false"
+	option set "SaveButt_", "enable", "false"
+	option set "CrtImgButt_", "enable", "false"
+
+	draw set "lowcolor", 170, 170, 170, "MainView"
+		draw line 0, 56 to 600, 56, "MainView"
+		draw line 601, 0 to 601, 55, "MainView"
+		draw line 361, 20 to 361, 52, "MainView"
+		draw line 422, 20 to 422, 52, "MainView"
+		draw line 540, 20 to 540, 52, "MainView"
+	draw set "lowcolor", 260, 260, 260, "MainView"
+		draw line 362, 20 to 362, 52, "MainView"
+		draw line 423, 20 to 423, 52, "MainView"
+		draw line 541, 20 to 541, 52, "MainView"
+
+	draw set "lowcolor", r-50, g-50, b-50, "MainView"
+		draw line 270, 58 to 270, 275, "MainView"
+		draw line 1, 275 to 269, 275, "MainView"
+		draw line 0, 84 to 269, 84, "MainView"
+		draw line 10, 151 to 259, 151, "MainView"
+		draw line 5, 284 to 265, 284, "MainView"
+		draw line 5, 285 to 5, 360, "MainView"
+	draw set "lowcolor", r+40, g+40, b+40, "MainView"
+		draw line 1, 57 to 270, 57, "MainView"
+		draw line 0, 58 to 0, 273, "MainView"
+		draw line 0, 85 to 269, 85, "MainView"
+		draw line 10, 152 to 259, 152, "MainView"
+		draw line 265, 285 to 265, 360, "MainView"
+		draw line 6, 361 to 265, 361, "MainView"
+		draw set "lowcolor", r, g, b, "MainView"
+
+	view 1, 58 to 269, 83, "MainTitleView", "MainView"
+		draw set "bgcolor", r-20, g-20, b-20, "MainTitleView"
+		draw set "Swis721 BT, Bold, 18", "MainTitleView"
+
+	view 144, 155 to 266, 271, "StatusBarView", "MainView"
+		draw set "bgcolor", r, g, b, "StatusBarView"
+		draw set "Swis721 BT, Bold, 16", "StatusBarView"
+
+	view 1, 155 to 139, 274, "StatusView", "MainView"
+		draw set "Swis721 BT, Roman, 10", "StatusView"
+		draw set "bgcolor", r, g, b, "StatusView"
+		draw set "lowcolor", r, g, b, "StatusView"
+		checkbox 9, 85, "DummyMode", "Simulation", dummy, "StatusView"
+
+	view 6, 285 to 264, 360, "DevFsView", "MainView"
+		draw set "bgcolor", r, g, b, "DevFsView"
+		draw set "lowcolor", r, g, b, "DevFsView"
+		draw set "Swis721 BT, Roman, 10","DevFsView"
+
+	button image 278, 61, "Back_", ThisDir$+"/Icons/DirUpEP.png", ThisDir$+"/Icons/DirUpE.png", ThisDir$+"/Icons/DirUpD.png", "MainView"
+	button image 274, 85, "NewFolder_", ThisDir$+"/Icons/NewFolderEP.png", ThisDir$+"/Icons/NewFolderE.png", ThisDir$+"/Icons/NewFolderD.png", "MainView"
+	button image 274, 125, "Play_", ThisDir$+"/Icons/PlayEP.png", ThisDir$+"/Icons/PlayE.png", ThisDir$+"/Icons/PlayD.png", "MainView"
+	button image 274, 155, "Up_", ThisDir$+"/Icons/ItemUpEP.png", ThisDir$+"/Icons/ItemUpE.png", ThisDir$+"/Icons/ItemUpD.png", "MainView"
+	button image 274, 185, "Down_", ThisDir$+"/Icons/ItemDownEP.png", ThisDir$+"/Icons/ItemDownE.png", ThisDir$+"/Icons/ItemDownD.png", "MainView"
+	button image 274, 252, "Remove_", ThisDir$+"/Icons/DelEntryEP.png", ThisDir$+"/Icons/DelEntryE.png", ThisDir$+"/Icons/DelEntryD.png", "MainView"
+	option set "Back_", "enable", "false"
+	option set "NewFolder_", "enable", "false"
+	option set "Play_", "enable", "false"
+	option set "Up_", "enable", "false"
+	option set "Down_", "enable", "false"
+	option set "Remove_", "enable", "false"
+
+	layout "left, top, right", "MainView"
+	view 307, 61 to 595, 80, "PathView", "MainView"
+		draw set "bgcolor", r, g, b, "PathView"
+		draw set "lowcolor", r, g, b, "PathView"
+		draw set "Swis721 BT, Roman, 11", "PathView"
+
+	layout "all", "MainView"
+	columnbox 312, 88 to 590, 358, "ListView", 3, "MainView"
+	columnbox column "ListView", " ", 20, 20, "lock-at-beginning, not-sortable, not-movable, merge-with-right, not-resizable"
+	columnbox column "ListView", "Name", 100, 350, "not-sortable"
+
+	view dropzone "MainView"
+
+	if (tooltips = 1) then
+		tooltip "AudioCD_", "Create audio disc"
+		tooltip "DataCD_", "Create data disc"
+		tooltip "DVD_", "Create DVD"
+		tooltip "VideoCD_", "Create Video disc"
+		tooltip "BurnImage_", "Burn imagefiles"
+		tooltip "CopyCD_", "Copy disc"
+		tooltip "ReadImage_", "Read image from disc"
+		tooltip "SaveButt_", "Save project"
+		tooltip "CrtImgButt_", "Create image from project"
+	fi
+	layout "left, top", "MainView"
+
+	return
+end sub
+
+sub DrawMode(Text$)
+	window hide "MainView"
+	draw flush "MainTitleView"
+	draw set "lowcolor", r-20, g-20, b-20, "MainTitleView"
+	draw text 7, 19, translate$(Text$), "MainTitleView"
+	InfPopMode$ = translate$(Text$)
+	CurrentMode$ = Text$
+	window show "MainView"
+	return
+end sub
+
+sub DisplayDriveInfo()
+	draw flush "DevFsView"
+	draw text 5, 15, translate$("Burner")+": "+Drive$, "DevFsView"
+	draw text 5, 30, translate$("Device nr")+".: "+Device$, "DevFsView"
+	if (CurrFS > 0) draw text 5, 45, translate$("Filesystem")+": "+translate$(FS$(CurrFS)), "DevFsView"
+	draw text 5, 65, translate$("Speed")+": "+str$(speed)+"x", "DevFsView"
+
+	return
+end sub
+
+sub AudioCdOptions()
+	CDType$ = "Audio"
+	DrawMode("Audio disc")
+	CurrFS = 9
+	option set "Back_", "enable", "false"
+	option set "NewFolder_", "enable", "false"
+	option set "Play_", "enable", "true"
+	option set "Up_", "enable", "true"
+	option set "Down_", "enable", "true"
+	option set "Remove_", "enable", "true"
+	CleanUpJaba()
+	MaxSize = 706
+	DisplayDriveInfo()
+	draw flush "PathView"
+	draw text 3, 13, translate$("Path")+": ."+Folder$(D)+"/", "PathView"
+	DrawStatus()
+
+	view 1, 86 to 269, 150, "InBoxView", "MainView"
+		draw set "bgcolor", r, g, b, "InBoxView"
+		textcontrol 10, 10 to 250, 30, "ProjectName", "Project name:", ProjectName$, "InBoxView"
+		checkbox 12, 34, "CopyProtect", "Copy protection", copyprot, "InBoxView"
+
+	if (tooltips = 1) then
+		tooltip "ProjectName", "Enter project name here"
+		tooltip "CopyProtect", "HiFi audioburner may recognize this"
+		tooltip "CheckDisk_", "Check the disc to be burned"
+	fi
+	return
+end sub
+
+sub DataCdOptions()
+	CDType$ = "Data"
+	DrawMode("Data disc")
+	CurrFS = CDFS
+print CDFS
+	option set "Back_", "enable", "false"
+	option set "NewFolder_", "enable", "true"
+	option set "Play_", "enable", "false"
+	option set "Up_", "enable", "false"
+	option set "Down_", "enable", "false"
+	option set "Remove_", "enable", "true"
+	CleanUpJaba()
+	MaxSize = 706
+	DisplayDriveInfo()
+	draw flush "PathView"
+	draw text 3, 13, translate$("Path")+": ."+Folder$(D)+"/", "PathView"
+	DrawStatus()
+
+	view 1, 86 to 269, 150, "InBoxView", "MainView"
+		draw set "bgcolor", r, g, b, "InBoxView"
+		draw set "lowcolor", r, g, b, "InBoxView"
+		textcontrol 10, 10 to 250, 30, "ProjectName", "Project name:", ProjectName$, "InBoxView"
+		checkbox 12, 34, "MultiSession", "Multisession", musess, "InBoxView"
+		checkbox 120, 34, "BootImage", "Boot image", bootimg, "InBoxView"
+
+	if (tooltips = 1) then
+		tooltip "ProjectName", "Enter project name here"
+		tooltip "MultiSession", "Create multisession discs"
+		tooltip "BootImage", "Add boot image"
+		tooltip "CheckDisk_", "Check the disc to be burned"
+	fi
+	return
+end sub
+
+sub ImageOptions()
+	CDType$ = "ImageMode"
+	DrawMode("Imagefiles")
+	CurrFS = 0
+	option set "Back_", "enable", "false"
+	option set "NewFolder_", "enable", "false"
+	option set "Play_", "enable", "false"
+	option set "Up_", "enable", "true"
+	option set "Down_", "enable", "true"
+	option set "Remove_", "enable", "true"
+	CleanUpJaba()
+	MaxSize = 706
+	DisplayDriveInfo()
+	draw flush "PathView"
+	draw text 3, 13, translate$("Path")+": ."+Folder$(D)+"/", "PathView"
+	DrawStatus()
+
+	view 1, 86 to 269, 150, "InBoxView", "MainView"
+		draw set "bgcolor", r, g, b, "InBoxView"
+		draw set "lowcolor", r, g, b, "InBoxView"
+		textcontrol 10, 10 to 250, 30, "ProjectName", "Project name:", ProjectName$, "InBoxView"
+		checkbox 12, 34, "MultiSession", "Multisession", musess, "InBoxView"
+
+	if (tooltips = 1) then
+		tooltip "ProjectName", "Enter project name here"
+		tooltip "MultiSession", "Create multisession discs"
+		tooltip "BootImage", "Add boot image"
+		tooltip "CheckDisk_", "Check the disc to be burned"
+	fi
+	return
+end sub
+
+sub DVDOptions()
+	CDType$ = "DVD"
+	DrawMode("DVD")
+	CurrFS = DVDFS
+	option set "Back_", "enable", "false"
+	option set "NewFolder_", "enable", "true"
+	option set "Play_", "enable", "false"
+	option set "Up_", "enable", "false"
+	option set "Down_", "enable", "false"
+	option set "Remove_", "enable", "true"
+	CleanUpJaba()
+	MaxSize = 4474.88
+	DisplayDriveInfo()
+	draw flush "PathView"
+	draw text 3, 13, translate$("Path")+": ."+Folder$(D)+"/", "PathView"
+	DrawStatus()
+
+	view 1, 86 to 269, 150, "InBoxView", "MainView"
+		draw set "bgcolor", r, g, b, "InBoxView"
+		draw set "lowcolor", r, g, b, "InBoxView"
+		textcontrol 10, 10 to 250, 30, "ProjectName", "Project name:", ProjectName$, "InBoxView"
+		checkbox 12, 34, "MultiSession", "Multisession", musess, "InBoxView"
+		checkbox 120, 34, "BootImage", "Boot image", bootimg, "InBoxView"
+
+	if (tooltips = 1) then
+		tooltip "ProjectName", "Enter project name here"
+		tooltip "MultiSession", "Create multisession discs"
+		tooltip "BootImage", "Add boot image"
+		tooltip "CheckDisk_", "Check the disc to be burned"
+	fi
+	return
+end sub
+
+sub VideoCdOptions()
+	CDType$ = "Video"
+	DrawMode("Video disc")
+	CurrFS = VCDFS
+	option set "Back_", "enable", "false"
+	option set "NewFolder_", "enable", "false"
+	option set "Play_", "enable", "true"
+	option set "Up_", "enable", "true"
+	option set "Down_", "enable", "true"
+	option set "Remove_", "enable", "true"
+	CleanUpJaba()
+	MaxSize = 706
+	DisplayDriveInfo()
+	draw flush "PathView"
+	draw text 3, 13, translate$("Path")+": ."+Folder$(D)+"/", "PathView"
+	DrawStatus()
+
+	view 1, 86 to 269, 150, "InBoxView", "MainView"
+		draw set "bgcolor", r, g, b, "InBoxView"
+		draw set "lowcolor", r, g, b, "InBoxView"
+		textcontrol 10, 10 to 250, 30, "ProjectName", "Project name:", ProjectName$, "InBoxView"
+
+	if (tooltips = 1) then
+		tooltip "ProjectName", "Enter project name here"
+		tooltip "CheckDisk_", "Check the disc to be burned"
+	fi
+
+	return
+end sub
+
+sub GetDiskInfo()
+	DiskInfo$ = system$("cdrecord dev="+Device$+" -toc")
+	NumInfo = token(DiskInfo$, info$(), chr$(10))
+
+	if (instr(DiskInfo$, "before") and instr(DiskInfo$, "after")) then
+		DiskInfoResult$ = "Disc empty"
+		if (instr(DiskInfo$, "track:")) then
+			MsInfo$ = system$("cdrecord -msinfo dev="+Device$+" | grep \"yay\"")
+			MsInfo$ = right$(MsInfo$, len(MsInfo$)-3)
+			MsInfo$ = left$(MsInfo$, len(MsInfo$)-1)
+			if (MsInfo$ = "") then
+				DiskInfoResult$ = "Disc not empty"
+			else
+				DiskInfoResult$ = "Multisession disc"
+			fi
+		fi
+	else
+		DiskInfoResult$ = "No disc"
+	fi
+	return
+end sub
+
+sub DrawStatus()
+	files = 0 : folders = 0 : CurrSize = 0
+	GetInfo$ = system$("ls -R -L -1 \""+TempDir$+"\"")
+	NumInfo = token(GetInfo$, info$(), chr$(10))
+	for CC = 2 to NumInfo
+		if (left$(info$(CC), 1) = "/") then
+			folders = folders+1
+		else
+			files = files+1
+		fi
+	next CC
+	files = files - folders
+
+	Tsize = val(system$("mkisofs -print-size -f -quiet "+TempDir$+"/"))
+	if (F(1) = 0) BaseSize = Tsize
+	CurrSize = (Tsize-BaseSize)*2
+	if (CDType$ = "Audio") then
+		CDSIZE$ = str$((80/807.5)*(CurrSize/1024))
+		if(split(CDSIZE$, cds$(), ".") = 2) then
+			MIN$ = cds$(1)
+			SEC$ = str$(val("0."+cds$(2))*60)
+			if(split(SEC$, cds$(), ".") = 2) SEC$ = cds$(1)
+			CDSIZE$ = MIN$+"min "+SEC$+"sec"
+		else
+			CDSIZE$ = CDSIZE$+"min"
+		fi
+	else
+		if (CurrSize < 1024) then
+			CDSIZE$ = str$(CurrSize)+" KB"
+		else
+			CDSIZE$ = str$(CurrSize/1024)
+			if(split(CDSIZE$, cds$(), ".") = 2) then
+				CDSIZE$ = cds$(1)+"."+left$(cds$(2), 2)+" MB"
+			else
+				CDSIZE$ = CDSIZE$+" MB"
+			fi
+		fi
+	fi
+	if (FormerCDType$ = CDType$) window hide "MainView"
+	draw flush "StatusView"
+	draw flush "StatusBarView"
+	draw text 10, 30, "Folders:", "StatusView"
+	draw text 10, 50, "Files:", "StatusView"
+	draw text 10, 70, "Disc size:", "StatusView"
+
+	AllignRight(115, 30, str$(folders), "StatusView")
+	AllignRight(115, 50, str$(files), "StatusView")
+	AllignRight(130, 70, CDSIZE$, "StatusView")
+
+	State = (40/MaxSize)*(CurrSize/1024)
+	if (State < 1 and F(1) > 0) State = 1
+	fillorstroke = 0
+	draw set "lowcolor", r-30, g-30, b-30, "StatusBarView"
+	draw circle 65, 61, 55, "StatusBarView"
+	draw set "lowcolor", 245, 245, 245, "StatusBarView"
+	draw circle 62, 58, 55, "StatusBarView"
+	draw set "lowcolor", 255, 60, 0, "StatusBarView"
+	draw circle 62, 58, 15+State, "StatusBarView"
+	if (State >= 40) draw text 5, 35, "Overburn", "StatusBarView"
+	draw set "lowcolor", r+40, g+40, b+40, "StatusBarView"
+	draw circle 62, 58, 15, "StatusBarView"
+	draw set "lowcolor", r-15, g-15, b-15, "StatusBarView"
+	draw circle 62, 58, 10, "StatusBarView"
+	if (State > 40 and overburn = 0) BURNBTN$ = "NO"
+	fillorstroke = 1
+
+	if (F(1) = 0) BURNBTN$ = "NO"
+	if (F(1) > 0) BURNBTN$ = "YES"
+
+	if (FormerCDType$ = CDType$) window show "MainView"
+	FormerCDType$ = CDType$
+	return
+end sub
+
+sub ItemAdd(Item$, Position)
+	if (left$(Item$, 3) = "D  ") then
+		Icon$	= "_Icon=_Folder"
+		Name$	= right$(Item$, len(Item$)-3)
+	elsif (left$(Item$, 3) = "F  ") then
+		Icon$	= "_Icon=_File"
+		Name$	= right$(Item$, len(Item$)-3)
+	fi
+	columnbox add "ListView", " ", Position, Icon$
+	columnbox add "ListView", "Name", Position, Name$+" "
+	return
+end sub
+
+sub AnalyseDropped()
+	F(D) = F(D)+1											// Number of Files, the pure Number (in directoryNr)
+	DroppedFile$(D, F(D)) = NewFile$							// DroppedFile = File with full original path
+	path = split(NewFile$, file$(), "/")
+	FileName$(D, F(D)) = file$(path)							// FileName = Just the filename(directorynr, filenr)
+	if (system("test -d \""+NewFile$+"\"")) then
+		ListItem$(D,F(D)) = "F  "+FileName$(D, F(D))			// ListItem = How it's written in the list.
+		if (CDType$ = "Audio") then							// Make Links special for audio files
+			if (len(str$(F(D))) = 1) NR$ = "00"+str$(F(D))
+			if (len(str$(F(D))) = 2) NR$ = "0"+str$(F(D))
+			if (len(str$(F(D))) = 3) NR$ = str$(F(D))
+			AudioTmp$(F(D)) = TempDir$+"/Audio-"+NR$+".wav"				//AudioTmp = How the audiofile is saved.
+			if (instr(system$("catattr BEOS:TYPE \""+NewFile$+"\""), ": string : audio/x-wav")) then
+				if (system("ln -s \""+NewFile$+"\" "+AudioTmp$(F(D)))) then
+					draw flush "BurnStateView"
+					draw text 10, 25, "An error occured!", "BurnStateView"
+					alert translate$("Could not add")+":\n\n"+NewFile$+"\n", "Oops!", 3
+					F(D) = F(D)-1 : return
+				fi
+			else
+				draw flush "BurnStateView"
+				draw text 10, 25, "Converting to wav ...", "BurnStateView"
+				if (system("tcode \""+NewFile$+"\" -wav "+AudioTmp$(F(D)))) then
+					draw flush "BurnStateView"
+					draw text 10, 25, "Error while converting!", "BurnStateView"
+					if (infpopp = 1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+translate$("Error while converting!")+"\" and type=\"int8(2)\" and iconRef=\"file("+ThisDir$+"/JABA)\" &")
+					F(D) = F(D)-1
+					rmerr = system("rm -f "+AudioTmp$(F(D))+" &")
+					sleep 1
+					return
+				fi
+			fi
+		elsif (CDType$ = "ImageMode") then							// Make Links special for audio files
+			if (len(str$(F(D))) = 1) NR$ = "00"+str$(F(D))
+			if (len(str$(F(D))) = 2) NR$ = "0"+str$(F(D))
+			if (len(str$(F(D))) = 3) NR$ = str$(F(D))
+			AudioTmp$(F(D)) = TempDir$+"/Image-"+NR$				//AudioTmp = How the audiofile is saved.
+			if (system("ln -s \""+NewFile$+"\" "+AudioTmp$(F(D)))) then
+				draw flush "BurnStateView"
+				draw text 10, 25, "An error occured!", "BurnStateView"
+				alert translate$("Could not add")+":\n\n"+NewFile$+"\n", "Oops!", 3
+				F(D) = F(D)-1 : return
+			fi
+ 		elsif (CDType$ = "Data" or CDType$ = "DVD") then
+			DataTmp$(F(D)) = TempDir$+Folder$(D)+"/"+FileName$(D, F(D))	// How the DataFile is saved.
+			msg$ = message$
+			if (system("ln -s \""+NewFile$+"\" \""+DataTmp$(F(D))+"\"")) then
+				draw flush "BurnStateView"
+				draw text 10, 25, "An error occured!", "BurnStateView"
+				alert translate$("Could not add")+":\n\n"+NewFile$+"\n", "Oops!", 3
+				F(D) = F(D)-1 : return
+			fi
+		elsif (CDType$ = "Video") then
+			if (len(str$(F(D))) = 1) NR$ = "00"+str$(F(D))
+			if (len(str$(F(D))) = 2) NR$ = "0"+str$(F(D))
+			if (len(str$(F(D))) = 3) NR$ = str$(F(D))
+			AudioTmp$(F(D)) = TempDir$+"/Video-"+NR$+".mpg"				//AudioTmp = How the videofile is saved.
+			if (VCDConvertType = 2) then
+				AnsConvAl = alert NewFile$+"\n\n"+translate$("Convert file?"), "Back", "No", "Yes", "stop"
+			elsif (VCDConvertType = 3) then
+				AnsConvAl = 2
+			else
+				AnsConvAl = 3
+			fi
+			if (AnsConvAl = 1) then
+				F(D) = F(D)-1
+				return
+			elsif (AnsConvAl = 2) then
+				if (system("ln -s \""+NewFile$+"\" \""+AudioTmp$(F(D))+"\"")) then
+					draw flush "BurnStateView"
+					draw text 10, 25, "An error occured!", "BurnStateView"
+					alert translate$("Could not add")+":\n\n"+NewFile$+"\n", "Oops!", 3
+					F(D) = F(D)-1 : return
+				fi
+			elsif (AnsConvAl = 3) then
+				draw flush "BurnStateView"
+				if (vcdtvstandard = 2) then
+					TvStnd$ = "ntsc-"
+				else
+					TvStnd$ = "pal-"
+				fi
+				if (VCDFS = 8) then
+					VcdType$ = "'"+TvStnd$+"svcd'"
+				else
+					VcdType$ = "'"+TvStnd$+"vcd'"
+				fi
+				option set "CancelDrop_", "enable", "false"
+				draw text 10, 25, translate$("Converting to")+" "+FS$(CurrFS)+" "+translate$("format ..."), "BurnStateView"
+				if (hqvideo = 1) then
+					HqVcd$ = " -hq"
+				else
+					HqVcd$ = " -sameq"
+				fi
+				if (system("ffmpeg -i \""+NewFile$+"\" -target "+VcdType$+HqVcd$+" \""+AudioTmp$(F(D))+"\"")) then
+					draw flush "BurnStateView"
+					draw text 10, 25, "Error while converting!", "BurnStateView"
+					if (infpopp = 1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+translate$("Error while converting!")+"\" and type=\"int8(2)\" and iconRef=\"file("+ThisDir$+"/JABA)\" &")
+					rmerr = system("rm -f "+AudioTmp$(F(D))+" &")
+					F(D) = F(D)-1
+					sleep 1
+					return
+				fi
+			fi
+		fi
+	else
+		option set "CancelDrop_", "enable", "false"
+		ListItem$(D,F(D)) = "D  "+FileName$(D, F(D))
+		DataTmp$(F(D)) = TempDir$+Folder$(D)+"/"+FileName$(D, F(D))		// How the Folder is saved.
+		if (system("cp -LsR \""+NewFile$+"\" \""+DataTmp$(F(D))+"\"")) then
+			alert translate$("Error while adding")+":\n\n"+NewFile$+"\n\n"+translate$("File is a broken Link and will not be added."), "Oops!", 3
+		fi
+		option set "CancelDrop_", "enable", "true"
+	fi
+	ItemAdd(ListItem$(D,F(D)), F(D)-1)								// ..and write it to the list.
+	DrawStatus()
+	Changed = true
+	return
+end sub
+
+sub SplitVideoFiles()
+
+	return
+end sub
+
+sub RemoveItem(ItemName$, ItemNum)
+	columnbox remove "ListView", ItemNum-1
+	if (CDType$ = "Audio" or CDType$ = "Video" or CDType$ = "ImageMode") then
+		err = system("rm -rf "+AudioTmp$(ItemNum)+"&")
+		for NST = ItemNum to F(D)
+			err = system("mv -f \""+AudioTmp$(NST+1)+"\" \""+AudioTmp$(NST)+"\" &")
+			DroppedFile$(D, NST) = DroppedFile$(D, NST+1)
+			FileName$(D, NST) = FileName$(D, NST+1)
+			ListItem$(D, NST) = ListItem$(D, NST+1)
+		next NST
+	elsif (CDType$ = "Data" or CDType$ = "DVD") then
+		err = system("rm -rf \""+TempDir$+Folder$(D)+"/"+ItemName$+"\" &")
+		for NST = ItemNum to F(D)
+			DataTmp$(ST) = TempDir$+Folder$(D)+"/"+FileName$(D, NST+1)
+			DroppedFile$(D, NST) = DroppedFile$(D, NST+1)
+			FileName$(D, NST) = FileName$(D, NST+1)
+			ListItem$(D, NST) = ListItem$(D, NST+1)
+		next NST
+	fi
+	F(D) = F(D)-1
+	DrawStatus()
+	SelItem$ = ""
+	Changed = true
+	return
+end sub
+
+sub SortFileUp(ItemNum)
+	columnbox clear "ListView"
+
+	ListItemTemp$ = ListItem$(D, ItemNum)
+	ListItem$(D, ItemNum) = ListItem$(D, ItemNum-1)
+	ListItem$(D, ItemNum-1) = ListItemTemp$
+	DroppedFileTemp$ = DroppedFile$(D, ItemNum)
+	DroppedFile$(D, ItemNum) = DroppedFile$(D, ItemNum-1)
+	DroppedFile$(D, ItemNum-1) = DroppedFileTemp$
+	FileNameTemp$ = FileName$(D, ItemNum)
+	FileName$(D, ItemNum) = FileName$(D, ItemNum-1)
+	FileName$(D, ItemNum-1) = FileNameTemp$
+
+	err = system("mv -f "+AudioTmp$(ItemNum)+" "+TempDir$+"/Audio_TMP")
+	err = system("mv -f "+AudioTmp$(ItemNum-1)+" "+AudioTmp$(ItemNum))
+	err = system("mv -f "+TempDir$+"/Audio_TMP "+AudioTmp$(ItemNum-1))
+
+	for ST = 1 to F(D)
+		ItemAdd(ListItem$(D,ST), ST-1)
+	next ST
+	SelNum = SelNum-1
+	columnbox select "ListView", SelNum-1
+	Changed = true
+	return
+end sub
+
+sub SortFileDown(ItemNum)
+	columnbox clear "ListView"
+
+	ListItemTemp$ = ListItem$(D, ItemNum)
+	ListItem$(D, ItemNum) = ListItem$(D, ItemNum+1)
+	ListItem$(D, ItemNum+1) = ListItemTemp$
+	DroppedFileTemp$ = DroppedFile$(D, ItemNum)
+	DroppedFile$(D, ItemNum) = DroppedFile$(D, ItemNum+1)
+	DroppedFile$(D, ItemNum+1) = DroppedFileTemp$
+	FileNameTemp$ = FileName$(D, ItemNum)
+	FileName$(D, ItemNum) = FileName$(D, ItemNum+1)
+	FileName$(D, ItemNum+1) = FileNameTemp$
+
+	err = system("mv -f "+AudioTmp$(ItemNum)+" "+TempDir$+"/Audio_TMP")
+	err = system("mv -f "+AudioTmp$(ItemNum+1)+" "+AudioTmp$(ItemNum))
+	err = system("mv -f "+TempDir$+"/Audio_TMP "+AudioTmp$(ItemNum+1))
+
+	for ST = 1 to F(D)
+		ItemAdd(ListItem$(D,ST), ST-1)
+	next ST
+	SelNum = SelNum+1
+	columnbox select "ListView", SelNum-1
+	Changed = true
+	return
+end sub
+
+sub OpenSubFolder(Folder$)
+	if (D > 1) then
+		option set "Back_", "enable", "true"
+	elsif (D < 2) then
+		D = 1
+		option set "Back_", "enable", "false"
+	fi
+	if (D > FD) then
+		Folder$(D) = OldFolder$+"/"+Folder$
+		OldFolder$ = Folder$(D)
+	elsif (D < FD)
+		OldFolder$ = Folder$
+	fi
+	if (Folder$ = "") Folder$(D) = ""
+	if (system("test -L \""+TempDir$+Folder$(D)+"\"")) then
+		option set "Remove_", "enable", "true"
+	else
+		option set "Remove_", "enable", "false"
+	fi
+	FD = D
+	F(D) = split(system$("ls -L -1 \""+TempDir$+Folder$(D)+"\""), file$(), chr$(10))
+	if (F(D) > 0) F(D) = F(D)-1
+	columnbox clear "ListView"
+	ArraySizes(F(D)+1)
+	for nf = 1 to F(D)
+		FileName$(D, nf) = file$(nf)
+		if (system("test -d \""+TempDir$+Folder$(D)+"/"+FileName$(D, nf)+"\"")) then
+			ListItem$(D,nf) = "F  "+FileName$(D, nf)
+		else
+			ListItem$(D,nf) = "D  "+FileName$(D, nf)
+		fi
+		ItemAdd(ListItem$(D,nf), nf-1)
+	next nf
+	draw flush "PathView"
+	DisplayFolder$ = Folder$(D)
+	if (len(Folder$(D)) > 30) DisplayFolder$ = left$(Folder$(D), 25)+"..."+right$(Folder$(D), len(Folder$(D))-rinstr(Folder$(D), "/")+1)
+
+	draw text 3, 13, translate$("Path")+": ."+DisplayFolder$+"/", "PathView"
+	return
+end sub
+
+sub CreateNewFolder()
+	NewFolderName$ = ""
+	OpenBurnStateWindow(200, 80)	// 200, 50, "BurnStateView"
+	draw set "Swis721 BT, Bold, 11", "BurnStateView"
+	draw text 5, 18, "New folder name:", "BurnStateView"
+	textcontrol 0, 28 to 193, 48, "NewFolderName", "", "", "BurnStateView"
+	button 135, 55 to 195, 75, "NewFolderOK_", "OK", "BurnStateView"
+	button 70, 55 to 130, 75, "NewFolderCancel_", "Cancel", "BurnStateView"
+	option set "NewFolderName", "focus", "true"
+	Changed = true
+	return
+end sub
+
+sub CheckCueFile(TheCueFile$)
+	nbcf = split(TheCueFile$, file$(), "/")
+	CueFilePath$ = left$(TheCueFile$, len(TheCueFile$)-len(file$(nbcf)))
+
+	CueErrAlertOpen$ = ""
+	CueErrAlertInfo$ = ""
+	CueErrAlertRead$ = ""
+	if(open(#1,TheCueFile$,"r")) then
+		BurnCue = true
+		NumFTB = 0
+		while(not eof(1))
+			NCF = NCF+1
+			line input #1 tmp$
+			if (split(tmp$, kind$(), " ") > 1) then
+				if (upper$(kind$(1)) = "FILE") then
+					NumFTB = NumFTB+1
+					FileToBurn$(NumFTB) = right$(kind$(2), len(kind$(2))-1)
+					FileToBurn$(NumFTB) = left$(FileToBurn$(NumFTB), len(FileToBurn$(NumFTB))-1)
+				fi
+			fi
+		wend
+		close #1
+	else
+		CueErrAlertOpen$ = translate$("Could not open CUE-file!")
+		BurnCue = false
+		return
+	fi
+	if (FileToBurn$(1) = "") then
+		CueErrAlertInfo$ = translate$("No file information found in CUE-file!")
+		BurnCue = false
+		return
+	fi
+	FilesToBurn$ = "" : FormerFilesToBurn$ = ""
+	for FTB = 1 to NumFTB
+		if (system("test -e \""+CueFilePath$+FileToBurn$(FTB)+"\"")) then
+			CueErrAlertRead$ = translate$("Required files not found!")
+			BurnCue = false
+			break
+		fi
+		FilesToBurn$ = FormerFilesToBurn$+" \""+CueFilePath$+FileToBurn$(FTB)+"\""
+		FormerFilesToBurn$ = FilesToBurn$
+	next FTB
+	return
+end sub
+
+sub LookForDrives()
+	print "z"
+	CdrecordVersion$ = system$("cdrecord -version")
+	print "z"
+	CdrecordInfo$ = system$("cdrecord -scanbus | grep \"Removable CD-ROM\"")
+	print "z"
+	Ndev = split(CdrecordInfo$, line$(), chr$(10))-1
+	dim Drive$(Ndev+2)
+	dim Device$(Ndev+2)
+	Drive$(0) = translate$("No drive")
+	Device$(0) = translate$("No drive")
+	for nd = 1 to Ndev
+		nitm = split(line$(nd), item$(), chr$(9))
+		if (nitm > 1) then
+			Device$(nd) = item$(2)
+			nn = split(line$(nd), name$(), "'")
+			Drive$(nd) = name$(4)+" "+name$(6)
+		fi
+	next nd
+	print "z"
+	if (nitm > 0) then
+		Drive$ = Drive$(1)
+		Device$ = Device$(1)
+		DriveNumber$ = str$(1)
+	else
+		Drive$ = Drive$(0)
+		Device$ = Device$(0)
+		DriveNumber$ = str$(0)
+	fi
+	return
+end sub
+
+sub OpenBurnWindow(Type$)
+	if (disccheck and Type$ <> "Blank" and Type$ <> "CreateImage") then
+		YesBurn = true
+		OpenBurnStateWindow(220, 50)
+		draw text 10, 30, "Check disc ...", "BurnStateView"
+		GetDiskInfo()
+		draw flush "BurnStateView"
+		if (DiskInfoResult$ = "No disc" or DiskInfoResult$ = "Disc not empty") then
+			draw text 10, 30, translate$(DiskInfoResult$), "BurnStateView"
+			YesBurn = false
+		elsif (DiskInfoResult$ = "Multisession disc") then
+			draw text 10, 30, translate$(DiskInfoResult$), "BurnStateView"
+			if (Type$ = "Data" or Type$ = "DVD") then
+				musess = 1
+				checkbox set "MultiSession", 1
+				option set "BootImage", "enable", "false"
+			elsif (Type$ = "Fixate") then
+				YesBurn = true
+			else
+				YesBurn = false
+			fi
+		fi
+		if (YesBurn = false) then
+			sleep 1
+			window close "BurnStateView"
+			BurnStateWin = false
+			return
+		fi
+	fi	
+	window close "BurnStateView"
+	BurnStateWin = false
+	abort = false
+	BurnDrive$	= Drive$
+	BSfix		= fix
+	BSimgfix	= BSfix
+	BSstream	= stream
+	BSeject		= eject
+	BSdummy	= dummy
+	BSSdao		= dao
+	BSdao		= dao
+	BSkeepimg	= keepimg
+	BSblforce	= blforce
+	BSpreemp	= preemp
+	BSdircop	= dircop
+
+	if (Type$ = "Audio")			BurnWinTitle$ = "Burn audio disc"
+	if (Type$ = "Data")			BurnWinTitle$ = "Burn data disc"
+	if (Type$ = "DVD") 			BurnWinTitle$ = "Burn DVD"
+	if (Type$ = "Video")			BurnWinTitle$ = "Burn video disc"
+	if (Type$ = "Copy")			BurnWinTitle$ = "Copy disc"
+	if (Type$ = "Image")			BurnWinTitle$ = "Burn image"
+	if (Type$ = "ImageMode")	BurnWinTitle$ = "Burn image"
+	if (Type$ = "CueFile")		BurnWinTitle$ = "Burn cuefile"
+	if (Type$ = "CreateImage")	BurnWinTitle$ = "Create data image"
+	if (Type$ = "VideoImage")	BurnWinTitle$ = "Create video image"
+	if (Type$ = "ReadImage")		BurnWinTitle$ = "Read disc image"
+	if (Type$ = "Blank")			BurnWinTitle$ = "Blank disc"
+	if (Type$ = "Fixate")			BurnWinTitle$ = "Fixate disc"
+
+	MainX = window get "MainView", "position-x"
+	MainY = window get "MainView", "position-y"
+	MainWidth = window get "MainView", "width"
+	BX = MainX+((MainWidth/2)-150) : BY = MainY+50
+	window open BX, BY to BX+300, BY+180, "PreBurnView", BurnWinTitle$
+	window set "maximumto", 300, 180, "PreBurnView"
+	window set "minimumto", 300, 180, "PreBurnView"
+	window set "look", "modal", "PreBurnView"
+	window set "feel", "modal-app", "PreBurnView"
+	window set "flags", "not-h-resizable, not-v-resizable", "PreBurnView"
+	draw set "bgcolor", r, g, b, "PreBurnView"
+	draw set "lowcolor", r-70, g-70, b-70, "PreBurnView"
+	draw line 0, 28 to 300, 28, "PreBurnView"
+	draw set "lowcolor", r+30, g+30, b+30, "PreBurnView"
+	draw line 0, 29 to 300, 29, "PreBurnView"
+	draw set "lowcolor", r, g, b, "PreBurnView"
+
+	view 0, 0 to 300, 27, "BurnTitleView", "PreBurnView"
+		draw set "bgcolor", r-20, g-20, b-20, "BurnTitleView"
+		draw set "lowcolor", r-20, g-20, b-20, "BurnTitleView"
+		draw set "Swis721 BT, Bold, 18", "BurnTitleView"
+		draw text 5, 20, translate$(BurnWinTitle$), "BurnTitleView"
+	checkbox 10, 153, "QuitApp", "Quit when finished", qab, "PreBurnView"
+	button 160, 150 to 225, 170, "NotBurn_", "Cancel", "PreBurnView"
+
+	if (Type$ = "Audio") then
+		draw set "Swis721 BT, Roman, 11", "PreBurnView"
+		draw text 10, 45, translate$("Name")+": "+ProjectName$, "PreBurnView"
+		draw text 10, 63, translate$("Device")+": "+BurnDrive$, "PreBurnView"
+		checkbox 150, 75, "Eject", "Eject disc when finished", BSeject, "PreBurnView"
+		checkbox 10, 75, "DAO", "Disc at once", BSdao, "PreBurnView"
+		checkbox 10, 100, "Fix", "Fixate", BSfix, "PreBurnView"
+		checkbox 150, 100, "Preemp", "50/15 preemphasis", BSpreemp, "PreBurnView"
+		button 230, 150 to 295, 170, "BurnAudio!_", "Burn!", "PreBurnView"
+		if (tooltips = 1) tooltip "BurnAudio!_", "Burn audio disc"
+		if (BurnDrive$ = translate$("No drive")) option set "BurnAudio!_", "enabled", "false"
+	fi
+
+	if (Type$ = "Data") then
+		draw set "Swis721 BT, Roman, 11", "PreBurnView"
+		draw text 10, 45, translate$("Name")+": "+ProjectName$, "PreBurnView"
+		if (bootimg = 1) then
+			draw text 10, 63, translate$("Boot image")+": "+BootImageName$, "PreBurnView"
+		elsif (bootimg = 0) then
+			draw text 10, 63, translate$("Device")+": "+BurnDrive$, "PreBurnView"
+		fi
+		if (musess = 1) then
+			lastsess = 0 : BSdao = 0
+			checkbox 150, 75, "LastSess", "Last session", lastsess, "PreBurnView"
+		elsif (musess = 0) then
+			checkbox 150, 75, "Fix", "Fixate", BSfix, "PreBurnView"
+		fi
+		checkbox 10, 75, "Stream", "Streaming", BSstream, "PreBurnView"
+		checkbox 10, 100, "DAO", "Disc at once", BSdao, "PreBurnView"
+		if (BSstream = 1) then
+			option set "KeepImg", "enable", "false"
+			BSkeepimg = 0
+		fi
+		if (musess = 1) option set "DAO", "enable", "false"
+		checkbox 150, 100, "Eject", "Eject disc when finished", BSeject, "PreBurnView"
+		checkbox 10, 125, "KeepImg", "Save image as", BSkeepimg, "PreBurnView"
+		view 145, 125 to 290, 145, "ImgView", "PreBurnView"
+			draw set "bgcolor", r, g, b, "ImgView"
+			draw set "lowcolor", r, g, b, "ImgView"
+		button 230, 150 to 295, 170, "BurnData!_", "Burn!", "PreBurnView"
+		if (tooltips = 1) tooltip "BurnData!_", "Burn data disc"
+		if (BurnDrive$ = translate$("No drive")) option set "BurnData!_", "enabled", "false"
+	fi
+
+	if (Type$ = "Video") then
+		draw set "Swis721 BT, Roman, 11", "PreBurnView"
+		draw text 10, 45, translate$("Name")+": "+ProjectName$, "PreBurnView"
+		draw text 10, 63, translate$("Device")+": "+BurnDrive$, "PreBurnView"
+		checkbox 10, 75, "KeepImg", "Save image as", BSkeepimg, "PreBurnView"
+		checkbox 10, 100, "Eject", "Eject disc when finished", BSeject, "PreBurnView"
+		view 145, 75 to 290, 95, "ImgView", "PreBurnView"
+			draw set "bgcolor", r, g, b, "ImgView"
+			draw set "lowcolor", r, g, b, "ImgView"
+		button 230, 150 to 295, 170, "BurnVideo!_", "Burn!", "PreBurnView"
+		if (tooltips = 1) tooltip "BurnVideo!_", "Burn video disc"
+		if (BurnDrive$ = translate$("No drive")) option set "BurnVideo!_", "enabled", "false"
+	fi
+
+	if (Type$ = "DVD") then
+		draw set "Swis721 BT, Roman, 11", "PreBurnView"
+		draw text 10, 45, translate$("Name")+": "+ProjectName$, "PreBurnView"
+		if (bootimg = 1) then
+			draw text 10, 63, translate$("Boot image")+": "+BootImageName$, "PreBurnView"
+		elsif (bootimg = 0) then
+			draw text 10, 63, translate$("Device")+": "+BurnDrive$, "PreBurnView"
+		fi
+		if (musess = 1) then
+			lastsess = 0 : BSdao = 0
+			checkbox 150, 75, "LastSess", "Last session", lastsess, "PreBurnView"
+		elsif (musess = 0) then
+			checkbox 150, 75, "Fix", "Fixate", BSfix, "PreBurnView"
+		fi
+		checkbox 10, 75, "Stream", "Streaming", BSstream, "PreBurnView"
+		checkbox 10, 100, "DAO", "Disc at once", BSdao, "PreBurnView"
+		if (BSstream = 1) then
+			option set "KeepImg", "enable", "false"
+			BSkeepimg = 0
+		fi
+		if (musess = 1) option set "DAO", "enable", "false"
+		checkbox 150, 100, "Eject", "Eject disc when finished", BSeject, "PreBurnView"
+		checkbox 10, 125, "KeepImg", "Save image as", BSkeepimg, "PreBurnView"
+		view 145, 125 to 290, 145, "ImgView", "PreBurnView"
+			draw set "bgcolor", r, g, b, "ImgView"
+			draw set "lowcolor", r, g, b, "ImgView"
+		button 230, 150 to 295, 170, "BurnDVD!_", "Burn!", "PreBurnView"
+		if (tooltips = 1) tooltip "BurnDVD!_", "Burn DVD"
+		if (BurnDrive$ = translate$("No drive")) option set "BurnDVD!_", "enabled", "false"
+	fi
+
+	if (Type$ = "Copy") then
+		cpdata = 1 : cpaudio = 0 : if (Ndev > 0) SourceDev$ = Device$(1)
+		dropbox 10, 40 to 290, 60, "CopySource", "Source:", "PreBurnView"
+		for nd = 1 to Ndev
+			item add "CopySource", Drive$(nd), "PreBurnView"
+		next nd
+		radiobutton 10, 68, "CPData", "Copy data disc", cpdata, "PreBurnView"
+		radiobutton 150, 68, "CPAudio", "Copy audio disc", cpaudio, "PreBurnView"
+		checkbox 10, 91, "DirectCopy", "On the fly", BSdircop, "PreBurnView"
+		checkbox 150, 91, "Eject", "Eject disc when finished", BSeject, "PreBurnView"
+		checkbox 10, 114, "KeepImg", "Save image as", BSkeepimg, "PreBurnView"
+		view 135, 114 to 290, 132, "ImgView", "PreBurnView"
+			draw set "bgcolor", r, g, b, "ImgView"
+			draw set "lowcolor", r, g, b, "ImgView"
+		button 230, 150 to 295, 170, "Copy!_", "Copy!", "PreBurnView"
+		if (tooltips = 1) tooltip "Copy!_", "Copy disc"
+		if (BSdircop = 1) then
+			option set "KeepImg", "enable", "false"
+			BSkeepimg = 0
+		fi
+		if (Drive$(1) = Drive$) then
+			checkbox set "DirectCopy", 0
+			option set "DirectCopy", "enabled", "false"
+			BSdircop = 0
+		fi
+		if (BurnDrive$ = translate$("No drive")) option set "Copy!_", "enabled", "false"
+	fi
+
+	if (Type$ = "Image") then
+		draw set "Swis721 BT, Roman, 11", "PreBurnView"
+		draw text 10, 45, translate$("Name")+": "+BurnImgFileName$, "PreBurnView"
+		draw text 10, 63, translate$("Device")+": "+BurnDrive$, "PreBurnView"
+		checkbox 10, 75, "DAO", "Disc at once", BSdao, "PreBurnView"
+		checkbox 150, 75, "Fix", "Fixate", BSfix, "PreBurnView"
+		checkbox 10, 100, "Eject", "Eject disc when finished", BSeject, "PreBurnView"
+		button 230, 150 to 295, 170, "BurnImage!_", "Burn!", "PreBurnView"
+		if (tooltips = 1) tooltip "BurnImage!_", "Burn imagefile"
+		if (BurnDrive$ = translate$("No drive")) option set "BurnImage!_", "enabled", "false"
+	fi
+
+	if (Type$ = "ImageMode") then
+		draw set "Swis721 BT, Roman, 11", "PreBurnView"
+		draw text 10, 53, translate$("Device")+": "+BurnDrive$, "PreBurnView"
+		checkbox 10, 75, "DAO", "Disc at once", BSdao, "PreBurnView"
+		checkbox 150, 75, "Fix", "Fixate", BSfix, "PreBurnView"
+		checkbox 10, 100, "Eject", "Eject disc when finished", BSeject, "PreBurnView"
+		button 230, 150 to 295, 170, "BurnImages!_", "Burn!", "PreBurnView"
+		if (tooltips = 1) then
+			if (F(1) = 1) then
+				tooltip "BurnImages!_", "Burn imagefile"
+			else
+				tooltip "BurnImages!_", "Burn imagefiles"
+			fi
+		fi
+		if (BurnDrive$ = translate$("No drive")) option set "BurnImages!_", "enabled", "false"
+	fi
+
+	if (Type$ = "CueFile") then
+		draw set "Swis721 BT, Roman, 11", "PreBurnView"
+		draw text 10, 45, translate$("Name")+": "+BurnCueFileName$, "PreBurnView"
+		draw text 10, 63, translate$("Device")+": "+BurnDrive$, "PreBurnView"
+		checkbox 10, 75, "DAO", "Disc at once", BSdao, "PreBurnView"
+		checkbox 150, 75, "Fix", "Fixate", BSfix, "PreBurnView"
+		checkbox 10, 100, "Eject", "Eject disc when finished", BSeject, "PreBurnView"
+		button 230, 150 to 295, 170, "BurnCueFile!_", "Burn!", "PreBurnView"
+		if (tooltips = 1) tooltip "BurnCueFile!_", "Burn cuefile"
+		if (BurnDrive$ = translate$("No drive")) option set "BurnCueFile!_", "enabled", "false"
+	fi
+
+	if (Type$ = "CreateImage") then
+		draw set "Swis721 BT, Roman, 11", "PreBurnView"
+		draw text 10, 55, translate$("Name")+": "+ProjectName$, "PreBurnView"
+		draw text 150, 55, translate$("Save as")+": "+CreateImgFileName$, "PreBurnView"
+		draw text 10, 85, translate$("Filesystem")+": "+translate$(FS$(CurrFS)), "PreBurnView"
+		draw text 150, 85, translate$("Size")+": "+CDSIZE$, "PreBurnView"
+		button 230, 150 to 295, 170, "CreateData!_", "Create it!", "PreBurnView"
+		if (tooltips = 1) tooltip "CreateData!_", "Create data imagefile"
+		if (BurnDrive$ = translate$("No drive")) option set "CreateData!_", "enabled", "false"
+	fi
+
+	if (Type$ = "VideoImage") then
+		draw set "Swis721 BT, Roman, 11", "PreBurnView"
+		draw text 10, 55, translate$("Name")+": "+ProjectName$, "PreBurnView"
+		draw text 150, 55, translate$("Save as")+": "+CreateImgFileName$, "PreBurnView"
+		draw text 10, 85, translate$("Filesystem")+": "+translate$(FS$(CurrFS)), "PreBurnView"
+		draw text 150, 85, translate$("Size")+": "+CDSIZE$, "PreBurnView"
+		button 230, 150 to 295, 170, "CreateVideo!_", "Create it!", "PreBurnView"
+		if (tooltips = 1) tooltip "CreateVideo!_", "Create video imagefile"
+		if (BurnDrive$ = translate$("No drive")) option set "CreateVideo!_", "enabled", "false"
+	fi
+
+	if (Type$ = "ReadImage") then
+		if (Ndev > 0) SourceDev$ = Device$(1)
+		draw set "Swis721 BT, Roman, 11", "PreBurnView"
+		draw text 10, 55, "Note: JABA can only read images from data discs!!", "PreBurnView"
+		dropbox 10, 75 to 290, 95, "ReadFrom", "Read from:", "PreBurnView"
+		for nd = 1 to Ndev
+			item add "ReadFrom", Drive$(nd), "PreBurnView"
+		next nd
+		checkbox 12, 120, "Eject", "Eject disc when finished", BSeject, "PreBurnView"
+		button 230, 150 to 295, 170, "Read!_", "Read it!", "PreBurnView"
+		if (tooltips = 1) tooltip "Read!_", "Read disc image"
+		if (BurnDrive$ = translate$("No drive")) option set "Read!_", "enabled", "false"
+	fi
+
+	if (Type$ = "Blank") then
+		draw text 10, 45, translate$("Device")+": "+BurnDrive$, "PreBurnView"
+		blfast = 1 : blall = 0 : blsess = 0 : BlankMode$ = "fast"
+		radiobutton 10, 60, "BlankFast", "Blank fast", blfast, "PreBurnView"
+		radiobutton 150, 60, "BlankAll", "Blank all", blall, "PreBurnView"
+		radiobutton 10, 90, "BlankSess", "Blank last session", blsess, "PreBurnView"
+		radiobutton 150, 90, "UnClsSess", "Unclose last session", ucsess, "PreBurnView"
+		checkbox 10, 120, "ForceRW", "Force blanking", blforce, "PreBurnView"
+		checkbox 150, 120, "Eject", "Eject disc when finished", eject, "PreBurnView"
+		button 230, 150 to 295, 170, "Blank!_", "Do it!", "PreBurnView"
+		if (tooltips = 1) tooltip "Blank!_", "Blank disc"
+		if (BurnDrive$ = translate$("No drive")) option set "Blank!_", "enabled", "false"
+	fi
+
+	if (Type$ = "Fixate") then
+		draw text 10, 63, translate$("Device")+": "+BurnDrive$, "PreBurnView"
+		checkbox 10, 90, "Eject", "Eject disc when finished", BSeject, "PreBurnView"
+		button 230, 150 to 295, 170, "Fix!_", "Fixate!", "PreBurnView"
+		if (tooltips = 1) tooltip "Fix!_", "Fixate unfixated disc"
+		if (BurnDrive$ = translate$("No drive")) option set "Fix!_", "enabled", "false"
+	fi
+
+	if (tooltips = 1) then
+		tooltip "DAO", "Disc at once (else track at once - tao)"
+		tooltip "Fix", "Fixate disc after burning"
+		tooltip "Eject", "Eject disc after burning"
+		tooltip "KeepImg", "Keep the created imagefile"
+		tooltip "Preemp", "Writes info to toc, that audiofiles have been recorded with preemphasis - does not affect the files!"
+		tooltip "Stream", "Write data direct to the disc"
+		tooltip "CPAudio", "Copy audio disc"
+		tooltip "CPData", "Copy data disc"
+		tooltip "CopySource", "Select the device to copy from"
+		tooltip "ReadFrom", "Select the device to read from"
+		tooltip "BlankFast", "Blank disc fast (delete toc)"
+		tooltip "BlankAll", "Blank complete disc"
+		tooltip "BlankSess", "Blank last session of a multisession disc"
+		tooltip "UnClsSess", "Remove fixation from last session"
+		tooltip "ForceRW", "Force blanking - even if there occur errors while blanking"
+		tooltip "NotBurn_", "Cancel and not continue"
+		tooltip "QuitApp", "Quit JABA when finished"
+	fi
+
+	Burnloop = true
+	while (Burnloop)
+		msg$ = message$
+		if (split(msg$, cmd$(), ":|") > 2) choice$ = cmd$(2)
+		switch msg$
+
+			case "Stream:ON|"
+				BSstream = 1
+				checkbox set "KeepImg", 0
+				option set "KeepImg", "enable", "false"
+				BSkeepimg = 0
+				draw flush "ImgView"
+				break
+
+			case "Stream:OFF|"
+				option set "KeepImg", "enable", "true"
+				BSstream = 0
+				break
+
+			case "KeepImg:ON|"
+				SaveImgPath$ = filepanel save$ User_home$
+				if (SaveImgPath$ = "") then
+					checkbox set "KeepImg", 0
+					break
+				fi
+				BSkeepimg = 1
+				checkbox set "DirectCopy", 0
+				option set "DirectCopy", "enabled", "false"
+				BSdircop = 0
+				filenum = split(SaveImgPath$, file$(), "/")
+				SaveImg$ = file$(filenum)
+				draw flush "ImgView"
+				draw text 5, 13, SaveImg$, "ImgView"
+				break
+
+			case "KeepImg:OFF|"
+				SaveImgPath$	= ""
+				SaveImg$		= ""
+				BSkeepimg = 0
+				option set "DirectCopy", "enabled", "true"
+				draw flush "ImgView"
+				break
+
+			case "CPData|"
+				cpdata = 1 : cpaudio = 0
+				option set "KeepImg", "enabled", "true"
+				break
+
+			case "CPAudio|"
+				cpdata = 0 : cpaudio = 1
+				keepimg = 0
+				checkbox set "KeepImg", 0
+				option set "KeepImg", "enabled", "false"
+				break
+
+			case "CopySource:"+choice$+"|"
+				for nd = 1 to Ndev
+					if (choice$ = Drive$(nd)) then
+						SourceDev$ = Device$(nd)
+						break
+					fi
+				next nd
+				if (choice$ = Drive$) then
+					checkbox set "DirectCopy", 0
+					option set "DirectCopy", "enabled", "false"
+					BSdircop = 0
+				else
+					option set "DirectCopy", "enabled", "true"
+				fi
+				break
+
+			case "DirectCopy:ON|"
+				option set "KeepImg", "enabled", "false"
+				checkbox set "KeepImg", 0
+				keepimg = 0
+				BSdircop = 1
+				break
+
+			case "DirectCopy:OFF|"
+				if (cpdata = 1) option set "KeepImg", "enabled", "true"
+				BSdircop = 0
+				break
+
+			case "SetSpeeds_|"
+				OpenSettings("CdrecordOptions", 300, 200)
+				break
+
+			case "DAO:ON|"
+				BSdao = 1
+				break
+
+			case "DAO:OFF|"
+				BSdao = 0
+				break
+
+			case "Preemp:ON|"
+				BSpreemp = 1
+				break
+
+			case "Preemp:OFF|"
+				BSpreemp = 0
+				break
+
+			case "Fix:ON|"
+				BSfix = 1
+				break
+
+			case "Fix:OFF|"
+				BSfix = 0
+				break
+
+			case "LastSess:ON|"
+				lastsess = 1
+				break
+
+			case "LastSess:OFF|"
+				lastsess = 0
+				break
+
+			case "BSDummyMode:ON|"
+				BSdummy = 1
+				break
+
+			case "BSDummyMode:OFF|"
+				BSdummy = 0
+				break
+
+			case "BlankFast|"
+				BlankMode$ = "fast"
+				break
+
+			case "BlankAll|"
+				BlankMode$ = "all"
+				break
+
+			case "BlankSess|"
+				BlankMode$ = "session"
+				break
+
+			case "UnClsSess|"
+				BlankMode$ = "unclose"
+				break
+
+			case "ForceRW:ON|"
+				BSblforce = 1
+				break
+
+			case "ForceRW:OFF|"
+				BSblforce = 0
+				break
+
+			case "Eject:ON|"
+				BSeject = 1
+				break
+
+			case "Eject:OFF|"
+				BSeject = 0
+				break
+				break
+
+			case "QuitApp:ON|"
+				BSqab = 1
+				break
+
+			case "QuitApp:OFF|"
+				BSqab = 0
+				break
+
+			case "BurnAudio!_|"
+				fix = BSfix
+				dao = BSdao
+				preemp = BSpreemp
+				stream = BSstream
+				eject = BSeject
+				qab = BSqab
+				CommandMatrix()
+				BurnDisk("Audio")
+				dao = BSSdao
+				Burnloop = false
+				break
+
+			case "BurnData!_|"
+				fix = BSfix
+				dao = BSdao
+				stream = BSstream
+				eject = BSeject
+				keepimg = BSkeepimg
+				qab = BSqab
+				CommandMatrix()
+				if (stream = 1) then
+					BurnDisk("StreamData")
+				elsif (stream = 0) then
+					MakeImage("Data")
+					if (not CreateErr) BurnDisk("Data")
+				fi
+				dao = BSSdao
+				Burnloop = false
+				break
+
+			case "BurnVideo!_|"
+				eject = BSeject
+				keepimg = BSkeepimg
+				qab = BSqab
+				CommandMatrix()
+				MakeImage("Video")
+				if (not CreateErr) BurnDisk("Video")
+				Burnloop = false
+				break
+
+			case "BurnDVD!_|"
+				fix = BSfix
+				dao = BSdao
+				stream = BSstream
+				eject = BSeject
+				keepimg = BSkeepimg
+				qab = BSqab
+				CommandMatrix()
+				if (stream = 1) then
+					BurnDisk("StreamData")
+				elsif (stream = 0) then
+					MakeImage("Data")
+					if (not CreateErr) BurnDisk("Data")
+				fi
+				dao = BSSdao
+				Burnloop = false
+				break
+
+			case "BurnImages!_|"
+				dao = BSdao
+				fix = BSfix
+				stream = BSstream
+				eject = BSeject
+				qab = BSqab
+				dummy = BSdummy
+				CommandMatrix()
+				BurnDisk("ImageMode")
+				dao = BSSdao
+				Burnloop = false
+				break
+
+			case "Copy!_|"
+				dircop = BSdircop
+				eject = BSeject
+				keepimg = BSkeepimg
+				qab = BSqab
+				CopyFromSame = false
+				if (SourceDev$ = Device$) CopyFromSame = true
+				CommandMatrix()
+				if (dircop = 1) then
+					BurnDisk("DirectCopy")
+				elsif (dircop = 0) then
+					MakeImage("Copy")
+					if (not CreateErr) BurnDisk("Copy")
+				fi
+				Burnloop = false
+				break
+
+			case "BurnImage!_|"	// imagefile
+				dao = BSdao
+				fix = BSfix
+				stream = BSstream
+				eject = BSeject
+				qab = BSqab
+				dummy = BSdummy
+				checkbox set "DummyMode", dummy
+				CommandMatrix()
+				BurnDisk("Image")
+				dao = BSSdao
+				Burnloop = false
+				break
+
+			case "BurnCueFile!_|"	// imagefile
+				dao = BSdao
+				fix = BSfix
+				stream = BSstream
+				eject = BSeject
+				qab = BSqab
+				dummy = BSdummy
+				checkbox set "DummyMode", dummy
+				CommandMatrix()
+				BurnDisk("CueFile")
+				dao = BSSdao
+				Burnloop = false
+				break
+
+			case "CreateData!_|"			// data imagefile
+				qab = BSqab
+				CommandMatrix()
+				MakeImage("Create")
+				Burnloop = false
+				break
+
+			case "CreateVideo!_|"			// video imagefile
+				qab = BSqab
+				CommandMatrix()
+				MakeImage("CreateVCDimg")
+				Burnloop = false
+				break
+
+			case "Read!_|"
+				qab = BSqab
+				eject = BSeject
+				CommandMatrix()
+				MakeImage("Read")
+				Burnloop = false
+				break
+
+			case "Blank!_|"
+				blforce = BSblforce
+				eject = BSeject
+				qab = BSqab
+				CommandMatrix()
+				BlankRwDisk(BlankMode$)
+				Burnloop = false
+				break
+
+			case "Fix!_|"
+				eject = BSeject
+				qab = BSqab
+				CommandMatrix()
+				OpenBurnStateWindow(200, 50)
+				draw text 10, 30, "Fixating disc ...", "BurnStateView"
+				FixErr = system("cdrecord -v -fix"+Dummy$+FifoBuff$+BurnProof$+Eject$+BurnSpeed$+DevNr$)
+				draw flush "BurnStateView"
+				if (FixErr) then
+					draw text 10, 25, "Error while fixating!", "BurnStateView"
+					if (infpopp = 1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+translate$("Error while fixating!")+"\" and type=\"int8(2)\" and iconRef=\"file("+ThisDir$+"/JABA)\" &")
+				else
+					draw text 10, 25, "Disc fixating succesul!", "BurnStateView"
+					if (infpopp = 1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+translate$("Disc fixating succesul!")+"\" and type=\"int8(0)\" and iconRef=\"file("+ThisDir$+"/JABA)\" &")
+				fi
+				sleep 1.3
+				Burnloop = false
+				break
+
+			case "PreBurnView:_QuitRequested|"
+			case "NotBurn_|"
+				abort = true
+				window close "PreBurnView"
+				Burnloop = false
+				break
+
+		end switch
+		sleep 0.01
+	wend
+	if (not system("test -e "+TempImage$)) RmImg = system("rm -rf "+TempImage$)
+	if (not system("test -e "+TempVidCue$)) RmImg = system("rm -rf "+TempVidCue$)
+	if (not system("test -e "+TempImage$+".toc")) RmImg = system("rm -rf "+TempImage$+".toc")
+	if (BurnStateWin = true) then
+		window close "BurnStateView"
+		BurnStateWin = false
+	fi
+	if (abort = false and qab = 1) inloop = false
+	return
+end sub
+
+sub CommandMatrix()
+	// Initalize option variables
+	if (not CDType$ = "Data" and not CDType$ = "DVD") then
+		bootimg = 0 : BootImageFile$ = "" : BootImageName$ = ""
+	fi
+	Dummy$		= ""
+	BlForce$		= ""
+	BurnProof$	= ""
+	DAO$		= " -tao"
+	Eject$		= ""
+	Preemp$		= " -nopreemp"
+	BurnSpeed$	= " speed=1"
+	ReadSpeed$	= " speed=2"
+	MuSess$		= ""
+	OverBurn$	= ""
+	Stream$		= ""
+	DirCop$		= ""
+	Fixate$		= ""
+	BurnLinks$	= " -f"
+//	DVDUDF$		= ""
+	IsoFS$		= ""
+	FfmpegVideo$	= ""
+	VcdimgVideo$ = ""
+
+	// Fill option variables with right content
+	VolumeName$	= " -V \""+ProjectName$+"\""
+	FifoBuff$		= " fs="+str$(fifo)+"m"
+	DevNr$			= " dev="+Device$
+	BurnSpeed$		= " speed="+str$(speed)
+
+	if (dummy = 1)		Dummy$	= " -dummy"
+	if (blforce = 1)		BlForce$	= " -force"
+	if (eject = 1)			Eject$		= " -eject"
+	if (burnproof = 1)	BurnProof$	= " driveropts=burnfree"
+	if (CurrFS = 1)		IsoFS$		= " -U -J -r"
+	if (CurrFS = 2)		IsoFS$		= " -l -r"
+	if (CurrFS = 3)		IsoFS$		= " -r"
+	if (CurrFS = 4)		IsoFS$		= " -udf -R"
+	if (CurrFS = 5)		IsoFS$		= " -dvd-video -udf"
+	if (CurrFS = 6)		VcdimgVideo$	= " -t 'vcd11'"
+	if (CurrFS = 7) 		VcdimgVideo$	= " -t 'vcd2'"
+	if (CurrFS = 8) 		VcdimgVideo$	= " -t 'svcd'"
+	if (preemp = 1)		Preemp$	= " -preemp"
+	if (copyprot = 1)		CopyProt$	= " -scms"
+	if (fix = 0)			Fixate$		= " -nofix"
+	if (overburn = 1)		OverBurn$	= " -overburn"
+	if (burnlinks = 1)		BurnLinks$	= " -f"
+	if (musess = 1)		MuSess$	= " -multi"
+	if (lastsess = 1)		MuSess$	= ""
+	if (dao = 1)			DAO$		= " -dao"
+//	if (bootimg = 1 and stream = 1)	DAO$ = " -tao"
+
+	window close "PreBurnView"
+	return
+end sub
+
+sub MakeImage(Type$)
+	HDSpace$ = system$("df /boot | grep \"Free Blocks:\"")
+	if (token(HDSpace$, info$(), " (") > 3) HDSpace = 2*val(trim$(info$(4)))
+	if (min(HDSpace, CurrSize) = HDSpace) then
+		alert "Not enough free disk space for creating the image!", "Oops!", 3
+		return
+	fi
+	OpenBurnStateWindow(250, 50)		
+	if (Type$ = "Create") then
+		draw text 10, 30, "Creating imagefile ...", "BurnStateView"
+		CreateErr = system("mkisofs -f -o "+CreateImgFile$+IsoFS$+VolumeName$+" "+TempDir$+"/")
+		if (not CreateErr and infpopp =1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+translate$("Ready!")+"\" and type=\"int8(0)\" and iconRef=\"file("+ThisDir$+"/JABA)\"")
+	elsif (Type$ = "CreateVCDimg") then
+		draw text 10, 30, "Creating imagefile ...", "BurnStateView"
+		PrevVideo$ = ""
+		for NV = 1 to F(D)
+			MpegFiles$ = PrevVideo$+"\""+AudioTmp$(NV)+"\""
+			PrevVideo$ = MpegFiles$+" "
+		next NV
+		CreateErr = system("vcdimager"+VcdimgVideo$+" -b \""+CreateImgFile$+"\" -c \""+TempVidCue$+"\" -l \""+ProjectName$+"\" "+MpegFiles$)
+		if (not CreateErr and infpopp =1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+translate$("Ready!")+"\" and type=\"int8(0)\" and iconRef=\"file("+ThisDir$+"/JABA)\"")
+	elsif (Type$ = "Read") then
+		draw text 10, 30, "Reading imagefile ...", "BurnStateView"
+		CreateErr = system("readcd -v dev="+SourceDev$+ReadSpeed$+" f=\""+ReadImgFile$+"\"")
+		if (eject = 1) EjErr = system("cdrecord -eject"+DevNr$)
+		if (not CreateErr and infpopp =1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+translate$("Ready!")+"\" and type=\"int8(0)\" and iconRef=\"file("+ThisDir$+"/JABA)\"")
+	elsif (Type$ = "Data") then
+		if (musess = 1) then
+			draw text 10, 30, "Prepare multisession ...", "BurnStateView"
+			MsInfo$ = system$("cdrecord -msinfo"+DevNr$+" | grep \"yay\"")
+			MsInfo$ = right$(MsInfo$, len(MsInfo$)-3)
+			MsInfo$ = left$(MsInfo$, len(MsInfo$)-1)
+			draw flush "BurnStateView"
+			draw text 10, 30, "Creating imagefile ...", "BurnStateView"
+			if (MsInfo$ = "") then
+				BurnDataStateText$ = translate$("Burning first session ...")
+				CreateErr = system("mkisofs -v -f -o "+TempImage$+IsoFS$+VolumeName$+" "+TempDir$+"/")
+			else
+				BurnDataStateText$ = translate$("Burning new session ...")
+				CreateErr = system("mkisofs -v -f -M "+Device$+" -o "+TempImage$+" -C "+MsInfo$+IsoFS$+VolumeName$+" "+TempDir$+"/")
+			fi
+		elsif (musess = 0) then
+			BurnDataStateText$ = translate$("Burning datadisc ...")
+			draw text 10, 30, "Creating imagefile ...", "BurnStateView"
+			CreateErr = system("mkisofs -v -f -o "+TempImage$+IsoFS$+VolumeName$+" "+TempDir$+"/")
+		else
+			CreateErr = true
+		fi
+	elsif (Type$ = "Video") then
+		draw text 10, 30, "Creating imagefile ...", "BurnStateView"
+		PrevVideo$ = ""
+		for NV = 1 to F(D)
+			MpegFiles$ = PrevVideo$+"\""+AudioTmp$(NV)+"\""
+			PrevVideo$ = MpegFiles$+" "
+		next NV
+		CreateErr = system("vcdimager"+VcdimgVideo$+" -b \""+TempImage$+"\" -c \""+TempVidCue$+"\" -l \""+ProjectName$+"\" "+MpegFiles$)
+	elsif (Type$ = "Copy") then
+		ReadSpeed$	= BurnSpeed$
+		if (not system("test -e "+TempImage$)) RmImg = system("rm -rf "+TempImage$)
+		if (cpdata = 1) then
+			draw text 10, 30, "Reading imagefile ...", "BurnStateView"
+			CreateErr = system("readcd -s dev="+SourceDev$+ReadSpeed$+" f="+TempImage$)
+			DiskInfoResult$ = "Created imagefile."
+		elsif (cpaudio = 1) then
+			draw text 10, 30, "Reading audiofiles ...", "BurnStateView"
+			MkDirErr = system("mkdir "+TempImage$)
+			CreateErr = system("cdda2wav -q -B -H --output-format=wav -x dev="+SourceDev$+" "+TempImage$+"/")
+			DiskInfoResult$ = "Loaded audiofiles"
+		fi
+		if (not CreateErr and CopyFromSame) then
+			draw flush "BurnStateView"
+			draw text 10, 30, translate$(DiskInfoResult$), "BurnStateView"
+			do
+				if (alert translate$(DiskInfoResult$)+"!\n"+translate$("Please insert the target-disc now."), "Cancel", "Done", "", "info" = 1) then
+					CreateErr = true
+					return : break
+				fi
+				GetDiskInfo()
+				if (DiskInfoResult$ = "Disc empty") break
+			loop
+		fi
+	fi
+
+	if (CreateErr) then
+		draw flush "BurnStateView"
+		draw text 10, 30, "Error creating imagefile!", "BurnStateView"
+		if (infpopp = 1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+translate$("Error creating imagefile!")+"\" and type=\"int8(2)\" and iconRef=\"file("+ThisDir$+"/JABA)\" &")
+		alert "Error creating imagefile!", "Damned!", 3
+	fi
+
+	return
+end sub
+
+sub BlankRwDisk(BlankMode$)
+	if (BurnStateWin = false) OpenBurnStateWindow(250, 50)
+	draw flush "BurnStateView"
+	draw text 10, 30, "Blanking ...", "BurnStateView"
+	BlankErr = system("cdrecord -v"+DevNr$+" blank="+BlankMode$+BlForce$+BurnSpeed$+Eject$+" > "+CdrecordLog$+" &")
+
+	Successful = false
+	dim part$(1)
+	burnloop = true
+	while (not open(#2,CdrecordLog$,"r"))
+		if (NR > 19) then
+			draw flush "BurnStateView"
+			draw text 10, 30, str$(NR/2)+"s timeout!", "BurnStateView"
+			BurnErr = true : burnloop = false
+			sleep 1
+			break
+		fi
+		sleep 0.5
+		NR = NR+1
+	wend
+
+	while (burnloop)
+		line input #2 tmp$
+		MsgNum = token(tmp$, part$(), " ")
+		dim part$(12)
+
+		if (z = 20) then
+			draw set "highcolor", 255, 0, 0, "BurnStateView"
+			draw flush "BurnStateView"
+			draw text 10, 30, "Blanking ...", "BurnStateView"
+		fi
+		if (z = 10) then
+			draw set "highcolor", 0, 200, 0, "BurnStateView"
+			draw flush "BurnStateView"
+			draw text 10, 30, "Blanking ...", "BurnStateView"
+		fi
+
+		if (part$(1)+part$(2) = "Blankingtime:") Successful = true
+		// Look if cdrecord is still active
+		if (z > 19) then
+			if (not instr(system$("ps"), "cdrecord")) then
+				if (Successful) then
+					BlankErr = false
+					draw set "highcolor", 0, 0, 0, "BurnStateView"
+				else
+					BlankErr = true
+					draw set "highcolor", 255, 0, 0, "BurnStateView"
+				fi
+				burnloop = false
+			fi
+			z = 0
+		fi
+		z = z+1
+		sleep 0.1
+	wend
+
+	if (NR < 20) close #2
+	if (not system("test -e "+CdrecordLog$)) RmErr = system("rm -f "+CdrecordLog$+" &")
+	if (BlankErr) then
+		draw flush "BurnStateView"
+		draw text 10, 30, "An error occured!", "BurnStateView"
+		if (infpopp = 1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+translate$("Error while blanking!")+"\" and type=\"int8(2)\" and iconRef=\"file("+ThisDir$+"/JABA)\" &")
+		alert "Error while blanking!", "Damned!", 3
+	else
+		draw flush "BurnStateView"
+		draw text 10, 30, "Blanked succesful!", "BurnStateView"
+		if (infpopp = 1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+translate$("Blanked succesful!")+"\" and type=\"int8(0)\" and iconRef=\"file("+ThisDir$+"/JABA)\" &")
+	fi
+	sleep 1.3
+	return
+end sub
+
+sub BurnDisk(Type$)
+	if (not system("test -e \""+CdrecordLog$+"\"")) RmErr = system("rm -rf \""+CdrecordLog$+"\"")
+	if (not BurnStateWin) OpenBurnStateWindow(250, 50)
+	draw flush "BurnStateView"
+	if (Type$ = "Audio") then
+		BurnDataStateText$ = "Burning audiodisc ..."
+		BurnErr = system("cdrecord -v -pad -audio"+Dummy$+DAO$+OverBurn$+CopyProt$+Preemp$+FifoBuff$+BurnProof$+Fixate$+Eject$+BurnSpeed$+DevNr$+" "+TempDir$+"/* > "+CdrecordLog$+" &")
+		DrawBurnState()
+	elsif (Type$ = "Data") then
+		draw text 10, 30, BurnDataStateText$, "BurnStateView"
+		BurnErr = system("cdrecord -v -pad -data"+Dummy$+DAO$+MuSess$+OverBurn$+FifoBuff$+BurnProof$+Fixate$+Eject$+BurnSpeed$+DevNr$+" "+BootImageFile$+TempImage$+" > "+CdrecordLog$+" &")
+		DrawBurnState()
+		if (keepimg = 1) MvErr = system("mv -f "+TempImage$+" "+SaveImgPath$)
+	elsif (Type$ = "StreamData") then
+		draw text 10, 30, "Prepare ...", "BurnStateView"
+		Tsize$ = system$("mkisofs -print-size -quiet -f "+TempDir$+"/")
+		Tsize$ = " -tsize="+left$(Tsize$, len(Tsize$)-1)+"s"
+		if (musess = 1) then
+			draw flush "BurnStateView"
+			draw text 10, 30, "Prepare multisession ...", "BurnStateView"
+			MsInfo$ = system$("cdrecord -msinfo"+DevNr$+" | grep \"yay\"")
+			MsInfo$ = right$(MsInfo$, len(MsInfo$)-3)
+			MsInfo$ = left$(MsInfo$, len(MsInfo$)-1)
+			if (MsInfo$ = "") then
+				BurnDataStateText$ = "Burning first session ..."
+				BurnErr = system("mkisofs -v -f"+IsoFS$+VolumeName$+" "+TempDir$+"/ | cdrecord -v -pad -waiti -data"+Dummy$+MuSess$+OverBurn$+FifoBuff$+BurnProof$+Fixate$+Eject$+BurnSpeed$+Tsize$+DevNr$+" - > "+CdrecordLog$+" &")
+			else
+				BurnDataStateText$ = "Burning new session ..."
+				BurnErr = system("mkisofs -v -f -M "+Device$+" -C "+MsInfo$+IsoFS$+VolumeName$+" "+TempDir$+"/ | cdrecord -v -pad -waiti -data"+Dummy$+MuSess$+OverBurn$+FifoBuff$+BurnProof$+Fixate$+Eject$+BurnSpeed$+Tsize$+DevNr$+" - > "+CdrecordLog$+" &")
+			fi
+		elsif (musess = 0) then
+			BurnDataStateText$ = "Burning datadisc ..."
+			BootBurnErr= 0
+			if (bootimg = 1) BootBurnErr = system("cdrecord -v -pad -data -nofix"+Dummy$+DAO$+MuSess$+OverBurn$+FifoBuff$+BurnProof$+Eject$+BurnSpeed$+DevNr$+" "+BootImageFile$)
+			if (not BootBurnErr) then
+				BurnErr = system("mkisofs -v -f"+IsoFS$+VolumeName$+" "+TempDir$+"/ | cdrecord -v -pad -waiti -data"+Dummy$+DAO$+OverBurn$+FifoBuff$+BurnProof$+Fixate$+Eject$+BurnSpeed$+Tsize$+DevNr$+" - > "+CdrecordLog$+" &")
+			fi
+		fi
+		DrawBurnState()
+	elsif (Type$ = "Video") then
+		BurnDataStateText$ = "Burning video disc ..."
+		BurnErr = system("cdrecord -v -pad cuefile=\""+TempVidCue$+"\" -dao "+Dummy$+OverBurn$+FifoBuff$+BurnProof$+Fixate$+Eject$+BurnSpeed$+DevNr$+" > "+CdrecordLog$+" &")
+		DrawBurnState()
+		if (keepimg = 1) MvErr = system("mv -f "+TempImage$+" "+SaveImgPath$+" &")
+	elsif (Type$ = "StreamVideo") then
+		draw text 10, 30, "Prepare ...", "BurnStateView"
+		PrevVideo$ = ""
+		for NV = 1 to F(D)
+			MpegFiles$ = PrevVideo$+"\""+AudioTmp$(NV)+"\""
+			PrevVideo$ = MpegFiles$+" "
+		next NV
+		Tsize$ = system$("mkisofs -print-size -quiet -f "+TempDir$+"/")
+		Tsize$ = " -tsize="+left$(Tsize$, len(Tsize$)-1)+"s"
+		BurnDataStateText$ = "Burning video disc ..."
+		BurnErr = system("vcdimager"+VcdimgVideo$+" -b \""+TempImage$+"\" -c \""+TempVidCue$+"\" -l \""+ProjectName$+"\" "+MpegFiles$+" | cdrecord -v -waiti -pad -mode2 -dao "+Dummy$+OverBurn$+FifoBuff$+BurnProof$+Fixate$+Eject$+BurnSpeed$+Tsize$+DevNr$+" - > "+CdrecordLog$+" &")
+		DrawBurnState()
+	elsif (Type$ = "Image") then
+		BurnDataStateText$ = "Burning image ..."
+		BurnErr = system("cdrecord -v -pad"+Dummy$+DAO$+OverBurn$+Fixate$+FifoBuff$+BurnProof$+Eject$+BurnSpeed$+DevNr$+" "+BurnImgFile$+" > "+CdrecordLog$+" &")
+		DrawBurnState()
+	elsif (Type$ = "ImageMode") then
+		BurnDataStateText$ = "Burning image ..."
+		BurnErr = system("cdrecord -v -pad "+Dummy$+DAO$+OverBurn$+CopyProt$+Preemp$+FifoBuff$+BurnProof$+Fixate$+Eject$+BurnSpeed$+DevNr$+" "+TempDir$+"/* > "+CdrecordLog$+" &")
+		DrawBurnState()
+	elsif (Type$ = "CueFile") then
+		BurnDataStateText$ = "Burning tracks ..."
+		BurnErr = system("cdrecord -v -pad"+Dummy$+DAO$+OverBurn$+Fixate$+FifoBuff$+BurnProof$+Eject$+BurnSpeed$+DevNr$+" "+FilesToBurn$+" > "+CdrecordLog$+" &")
+		DrawBurnState()
+	elsif (Type$ = "Copy") then
+		BurnDataStateText$ = "Copying disc ..."
+		if (cpdata = 1) BurnErr = system("cdrecord -v -pad -data"+Dummy$+OverBurn$+FifoBuff$+BurnProof$+Fixate$+Eject$+BurnSpeed$+DevNr$+" "+TempImage$+" > "+CdrecordLog$+" &")
+		if (cpaudio = 1) BurnErr = system("cdrecord -v -pad -audio"+Dummy$+OverBurn$+CopyProt$+Preemp$+FifoBuff$+BurnProof$+Fixate$+Eject$+BurnSpeed$+DevNr$+" "+TempImage$+"/* > "+CdrecordLog$+" &")
+		DrawBurnState()
+		if (keepimg = 1) MvErr = system("mv -f "+TempImage$+" \""+SaveImgPath$+"\" &")
+	elsif (Type$ = "DirectCopy") then
+		if (speed > 4) then
+			ReadSpeed$	= BurnSpeed$
+			BurnSpeed$	= " speed="+str$(int(speed/2))
+		else
+			ReadSpeed$	= " speed="+str$(2*speed)
+		fi
+		if (cpdata = 1) then
+			BurnDataStateText$ = "Copying disc ..."
+			BurnErr = system("readcd -s dev="+SourceDev$+ReadSpeed$+" f=- | cdrecord -v -data"+Dummy$+OverBurn$+FifoBuff$+BurnProof$+Fixate$+Eject$+BurnSpeed$+DevNr$+" - > "+CdrecordLog$+" &")
+			DrawBurnState()
+		elsif (cpaudio = 1) then
+			draw text 10, 30, "Prepare ...", "BurnStateView"
+			if (not system("test -d "+AudioInfFiles$) and not AudioInfFiles$ = "") RmErr = system("rm -rf "+AudioInfFiles$+" &")
+			PrepErr = system("mkdir "+AudioInfFiles$)
+			PrepErr = system("cdda2wav -s -q -J dev="+SourceDev$+" "+AudioInfFiles$+"/")
+			if (PrepErr) then
+				draw flush "BurnStateView"
+				draw text 10, 30, "An error occured!", "BurnStateView"
+				if (infpopp = 1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+translate$("Error while preparing!")+"\" and type=\"int8(2)\" and iconRef=\"file("+ThisDir$+"/JABA)\"")
+				alert "Error while preparing!", "Damned!", 3
+				if (not system("test -d "+AudioInfFiles$) and not AudioInfFiles$ = "") RmErr = system("rm -rf "+AudioInfFiles$)
+				keepimg = 0 : return
+			else
+				BurnDataStateText$ = "Copying disc ..."
+				BurnErr = system("cdda2wav -q -H -B --output-format=wav -x dev="+SourceDev$+ReadSpeed$+" - | cdrecord -v -waiti -pad -audio -useinfo"+Dummy$+OverBurn$+CopyProt$+Preemp$+FifoBuff$+BurnProof$+Fixate$+Eject$+BurnSpeed$+DevNr$+" "+AudioInfFiles$+"/*.inf > "+CdrecordLog$+" &")
+				DrawBurnState()
+				if (not system("test -d "+AudioInfFiles$) and not AudioInfFiles$ = "") RmErr = system("rm -rf "+AudioInfFiles$)
+			fi
+		fi
+	fi
+	draw flush "BurnStateView"
+
+	if (BurnErr) then
+		draw text 10, 30, "An error occured!", "BurnStateView"
+		if (infpopp = 1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+translate$("Error while burning!")+"\" and type=\"int8(2)\" and iconRef=\"file("+ThisDir$+"/JABA)\" and messageID=\"InfPopStatus\" &")
+		alert "Error while burning!", "Damned!", 3
+	else
+		draw text 10, 30, "Burning succesful!", "BurnStateView"
+		if (infpopp = 1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+translate$("Burning succesful!")+"\" and type=\"int8(0)\" and iconRef=\"file("+ThisDir$+"/JABA)\" and messageID=\"InfPopStatus\" &")
+		sleep 1.3
+	fi
+	keepimg = 0
+	return
+end sub
+
+sub DrawBurnState()
+	NR = 0 : z = 0 : zz = 0
+	TrackNr = 0
+	Progress = -1
+//	PrevProgress = -1
+	CurrTrackMax = 0
+	PrevTrackMax = 0
+	PrevTrackNr = 0
+	TotalSize = 0
+	Successful = false
+	draw flush "BurnStateView"
+	draw text 10, 30, "Starting cdrecord ...", "BurnStateView"
+
+	dim part$(1)
+	burnloop = true
+	while (not open(#2,CdrecordLog$,"r"))
+		if (NR > 19) then
+			draw flush "BurnStateView"
+			draw text 10, 30, str$(NR/2)+"s timeout!", "BurnStateView"
+			BurnErr = true : burnloop = false
+			sleep 1
+			break
+		fi
+		sleep 0.5
+		NR = NR+1
+	wend
+	window set "resizeto", 250, 150, "BurnStateView"
+	view 0, 40 to 250, 150, "BurnStatusView", "BurnStateView"
+		draw set "bgcolor", 220, 220, 220, "BurnStatusView"
+		draw set "lowcolor", 240, 240, 240, "BurnStatusView"
+		draw set "Swis721 BT, Bold, 14", "BurnStatusView"
+	tmp = 0
+	while (burnloop)
+		line input #2 tmp$
+		MsgNum = token(tmp$, part$(), " ")
+		dim part$(12)
+
+		if (part$(1)+part$(3) = "Trackdata" or part$(1)+part$(3) = "Trackaudio") then
+			TotalSize = tmp+val(part$(4))
+			tmp = TotalSize
+		fi
+
+		if (part$(1)+part$(2) = "ATIPinfo") then
+			draw flush "BurnStateView"
+			draw text 10, 30, "Start the device ...", "BurnStateView"
+		fi
+		if (part$(1)+part$(2)+part$(3) = "Lastchanceto") then
+			draw flush "BurnStateView"
+			draw text 10, 30, "Will burn now!", "BurnStateView"
+			zz = 0
+		fi
+
+		if (zz < 111 and TrackNr = 0) then
+			draw flush "BurnStatusView"
+			draw rect 0, zz to 250, 110, "BurnStatusView"
+			zz = zz+1
+		fi
+
+		if (part$(1) = "Track" and part$(4) = "of") then
+			TrackNr			= val(left$(part$(2), len(part$(2))-1))
+			Progress		= val(part$(3))
+			TrackMax		= val(part$(5))
+			CurrSpeed$		= part$(10)
+		fi
+
+		if (TrackNr <> PrevTrackNr) then
+			draw flush "BurnStateView"
+			draw text 10, 30, translate$(BurnDataStateText$),"BurnStateView"
+			PrevTrackNr		= TrackNr
+			CurrTrackMax	= CurrTrackMax+PrevTrackMax
+			PrevTrackMax	= TrackMax
+		fi
+
+		if (Progress <> PrevProgress) then
+			Status = (240/TotalSize)*(CurrTrackMax+Progress)
+			PrevProgress = Progress
+			window hide "BurnStateView"
+			draw flush "BurnStatusView"
+			draw text 10, 20, translate$("Speed")+": "+CurrSpeed$, "BurnStatusView"
+			draw set "lowcolor", 90, 150, 255, "BurnStatusView"
+			draw rect 5, 40 to (240/TrackMax)*Progress, 60,"BurnStatusView"
+			draw rect 5, 70 to Status, 90,"BurnStatusView"
+			draw text 10, 55, translate$("Track")+": "+str$(TrackNr), "BurnStatusView"
+			draw text 10, 85, str$(CurrTrackMax+Progress)+translate$("MB of ")+str$(TotalSize)+translate$("MB"), "BurnStatusView"
+			IPStatus = ((100/TotalSize)*(CurrTrackMax+Progress))/100
+			window show "BurnStateView"
+//			if (z < 10 and infpopp = 1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+translate$(BurnWinTitle$)+"\" and type=\"int8(3)\" and iconRef=\"file("+ThisDir$+"/JABA)\" and messageID=\"InfPopStatus\" and progress=\"float("+str$(IPStatus)+")\" and timeout=\"int32(10)\" &")
+		fi
+
+		if (part$(1) = "Fixating...") then
+			draw flush "BurnStateView"
+			draw flush "BurnStatusView"
+			draw text 10, 30, "Fixating ...", "BurnStateView"
+			draw set "lowcolor", r, g, b, "BurnStatusView"
+			draw set "highcolor", 100, 100, 100, "BurnStatusView"
+			draw text 10, 20, "Speed: "+CurrSpeed$, "BurnStatusView"
+			draw set "lowcolor", 230, 230, 230, "BurnStatusView"
+			draw rect 5, 40 to 240, 60,"BurnStatusView"
+			draw rect 5, 70 to 240, 90,"BurnStatusView"
+			draw text 10, 55, translate$("Track")+": "+str$(TrackNr), "BurnStatusView"
+			draw text 10, 85, str$(TotalSize)+"MB of "+str$(TotalSize)+"MB", "BurnStatusView"
+			if (infpopp = 1) InfPopErr = system("hey -s InfoPopper create message with app=\"JABA\" and title=\""+InfPopMode$+"\" and content=\""+translate$(BurnWinTitle$)+"\" and type=\"int8(3)\" and iconRef=\"file("+ThisDir$+"/JABA)\" and messageID=\"InfPopStatus\" and progress=\"float("+str$(IPStatus)+")\" and timeout=\"int32(0)\" &")
+		fi
+
+		if (part$(1)+part$(2) = "Writingtime:") Successful = true
+
+		// Look if cdrecord is still active
+		if (z > 19) then
+			if (not instr(system$("ps"), "cdrecord")) then
+				if (Successful) then
+					BurnErr = false
+				else
+					BurnErr = true
+				fi
+				burnloop = false
+			fi
+			z = 0
+		fi
+		z = z+1
+		sleep 0.3		//sleep 0.1
+	wend
+	if (NR < 20) close #2
+	if (not system("test -e "+CdrecordLog$)) RmErr = system("rm -f "+CdrecordLog$+" &")
+
+	view remove "BurnStatusView"
+	window set "resizeto", 250, 50, "BurnStateView"
+	draw set "highcolor", 0, 0, 0, "BurnStateView"
+	draw set "lowcolor", r, g, b, "BurnStateView"
+
+	return
+end sub
+
+sub OpenBurnStateWindow(BSwidth, BSheight)
+	MainX = window get "MainView", "position-x"
+	MainY = window get "MainView", "position-y"
+	MainWidth = window get "MainView", "width"
+	BSX = MainX+((MainWidth/2)-(BSwidth/2)) : BSY = MainY+60
+	window open BSX, BSY to BSX+BSwidth, BSY+BSheight, "BurnStateView", "Status window"
+	window set "look", "modal", "BurnStateView"
+	window set "feel", "modal-app", "BurnStateView"
+	window set "flags", "not-h-resizable, not-v-resizable", "BurnStateView"
+	draw set "bgcolor", r, g, b, "BurnStateView"
+	draw set "lowcolor", r, g, b, "BurnStateView"
+	draw set "Swis721 BT, Bold, 14", "BurnStateView"
+	BurnStateWin = true
+	return
+end sub
+
+sub OpenSettings(Type$, Swidth, Sheight)
+	abort		= false
+//	SCDFS		= CDFS
+//	SDVDFS		= DVDFS
+//	SVCDFS		= VCDFS
+//	SCDFS$		= CDFS$
+//	SDVDFS$	= DVDFS$
+
+//	Svcdtype		= vcdtype
+	Svcdtvstandard	= vcdtvstandard
+
+	Sburnproof		= burnproof
+	Sburnlinks		= burnlinks
+	Shqvideo		= hqvideo
+	Sblforce			= blforce
+	Sspeed			= speed
+	Sfifo			= fifo
+	Soverburn		= overburn
+	Sr				= r
+	Sg				= g
+	Sb				= b
+	Stooltips		= tooltips
+	Sinfpopp		= infpopp
+	Sfullwidth		= fullwidth
+	Sownproj		= ownproj
+	Smklink			= mklink
+	Sdisccheck		= disccheck
+	SetDriveNumber$ 	= DriveNumber$
+	SetDrive$			= Drive$
+	SetDevice$		= Device$
+	Sdao			= dao
+
+	if (Type$ = "Devices") SetTitle$ = "Burner device"
+	if (Type$ = "FileSystems") SetTitle$ = "CD filesystem"
+	if (Type$ = "VideoDiskType") SetTitle$ = "Video disk type"
+	if (Type$ = "DVDSystems") SetTitle$ = "DVD filesystem"
+	if (Type$ = "CdrecordOptions") SetTitle$ = "Cdrecord options"
+	if (Type$ = "ToolPaths") SetTitle$ = "Toolpaths"
+	if (Type$ = "Interface") SetTitle$ = "Interface"
+	if (Type$ = "Other") SetTitle$ = "Other"
+
+	MainX = window get "MainView", "position-x"
+	MainY = window get "MainView", "position-y"
+	MainWidth = window get "MainView", "width"
+	SX = MainX+((MainWidth/2)-(Swidth/2)) : SY = MainY+50
+	window open SX, SY to SX+Swidth, SY+Sheight, "SettingsView", SetTitle$
+	window set "maximumto", Swidth, Sheight, "SettingsView"		// original: 300, 200
+	window set "minimumto", Swidth, Sheight, "SettingsView"
+	window set "look", "modal", "SettingsView"
+	window set "feel", "modal-app", "SettingsView"
+	window set "flags", "not-h-resizable, not-v-resizable", "SettingsView"
+	draw set "bgcolor", r, g, b, "SettingsView"
+	draw set "Swis721 BT, Roman, 10", "SettingsView"
+
+	view 0, 0 to Swidth, 29, "SetTitleView", "SettingsView"
+		draw set "Swis721 BT, Bold, 18", "SetTitleView"
+		draw set "lowcolor", r-70, g-70, b-70, "SetTitleView"
+		draw line 0, 28 to Swidth, 28, "SetTitleView"
+		draw set "lowcolor", r+30, g+30, b+30, "SetTitleView"
+		draw line 0, 29 to Swidth, 29, "SetTitleView"
+		draw set "lowcolor", r, g, b, "SetTitleView"
+		draw set "bgcolor", r-20, g-20, b-20, "SetTitleView"
+		draw set "lowcolor", r-20, g-20, b-20, "SetTitleView"
+		draw text 5, 20, translate$(SetTitle$), "SetTitleView"
+
+	if (Type$ = "Devices") then
+		draw set "Swis721 BT, Bold, 12", "SettingsView"
+		draw text 10, 50, "Please select your burner:", "SettingsView"
+		dropbox 10, 63 to 190, 83, "DeviceDrop", "Devices:", "SettingsView"
+		draw set "Swis721 BT, Roman, 10", "SettingsView"
+		item add "DeviceDrop", Drive$, "SettingsView"
+		for nd = 1 to Ndev
+			if (not Drive$(nd) = Drive$) item add "DeviceDrop", Drive$(nd), "SettingsView"
+		next nd
+		view 0, 100 to 300, 165, "OnSettingsView", "SettingsView"
+			draw set "Swis721 BT, Roman, 10", "OnSettingsView"
+			draw set "bgcolor", r, g, b, "OnSettingsView"
+			draw set "lowcolor", r, g, b, "OnSettingsView"
+			draw text 10, 10, translate$("Device name")+": "+Drive$, "OnSettingsView"
+			draw text 10, 25, translate$("Device nr")+".: "+Device$, "OnSettingsView"
+		button 5, 170 to 75, 190, "DeviceInfo_", "Info", "SettingsView"
+		button Swidth-75, Sheight-30 to Swidth-5, Sheight-10, "SaveDEV_", "Save", "SettingsView"
+		if (tooltips = 1) tooltip "SaveDEV_", "Save changes and close window"
+	fi
+
+	if (Type$ = "FileSystems") then
+		SFS		= CDFS
+		if (SFS = 2) then
+			Sjoliet = 0 : Sisolong = 1 : Sisoshort = 0 : Sudf = 0
+		elsif (SFS = 3) then
+			Sjoliet = 0 : Sisolong = 0 : Sisoshort = 1 : Sudf = 0
+		elsif (SFS = 4) then
+			Sjoliet = 0 : Sisolong = 0 : Sisoshort = 0 : Sudf = 1
+		else
+			SFS = 1 : CDFS = 1
+			Sjoliet = 1 : Sisolong = 0 : Sisoshort = 0 : Sudf = 0
+		fi
+		radiobutton 10, 45, "Joliet", "Windows joliet", Sjoliet, "SettingsView"
+		radiobutton 10, 65, "IsoLong", "ISO9660 31", Sisolong, "SettingsView"
+		radiobutton 150, 65, "IsoShort", "ISO9660 8.3", Sisoshort, "SettingsView"
+		radiobutton 10, 85, "Udf", "UDF (Data-DVD)", Sudf, "SettingsView"
+		button Swidth-75, Sheight-30 to Swidth-5, Sheight-10, "SaveCDFS_", "Save", "SettingsView"
+		if (tooltips = 1) tooltip "SaveCDFS_", "Save changes and close window"
+	fi	
+
+	if (Type$ = "DVDSystems") then
+		SFS		= DVDFS
+		if (SFS = 2) then
+			Sjoliet = 0 : Sisolong = 1 : Sisoshort = 0 : Sudf = 0 : Svudf = 0
+		elsif (SFS = 3) then
+			Sjoliet = 0 : Sisolong = 0 : Sisoshort = 1 : Sudf = 0 : Svudf = 0
+		elsif (SFS = 4) then
+			Sjoliet = 0 : Sisolong = 0 : Sisoshort = 0 : Sudf = 1 : Svudf = 0
+		elsif (SFS = 5) then
+			Sjoliet = 0 : Sisolong = 0 : Sisoshort = 0 : Sudf = 0 : Svudf = 1
+		else
+			SFS = 1 : DVDFS = 1
+			Sjoliet = 1 : Sisolong = 0 : Sisoshort = 0 : Sudf = 0 : Svudf = 0
+		fi
+		if (SDVDConvertType = 2) then
+			SConvertType = 2 : Sautoconvert = 0 : Saskconvert = 1
+		else
+			SConvertType = 1 : DVDConvertType = 1
+			Sautoconvert = 1 : Saskconvert = 0
+		fi
+		radiobutton 10, 35, "Joliet", "Windows joliet", Sjoliet, "SettingsView"
+		radiobutton 10, 55, "IsoLong", "ISO9660 31", Sisolong, "SettingsView"
+		radiobutton 150, 55, "IsoShort", "ISO9660 8.3", Sisoshort, "SettingsView"
+		radiobutton 10, 75, "Udf", "UDF (Data-DVD)", Sudf, "SettingsView"
+		radiobutton 150, 75, "VUdf", "UDF (Video-DVD)", Svudf, "SettingsView"
+//		view 0, 100 to Swidth, Sheight-50, "ConvertView", "SettingsView"
+//			draw set "bgcolor", r, g, b, "ConvertView"
+//			draw set "lowcolor", r, g, b, "ConvertView"
+//			draw set "Swis721 BT, Bold, 11", "ConvertView"
+//			draw text 10, 15, "Video converting", "ConvertView"
+//			radiobutton 10, 25, "AutoConvert", "Auto convert", Sautoconvert, "ConvertView"
+//			radiobutton 150, 25, "AskConvert", "Ask me", Saskconvert, "ConvertView"
+		button Swidth-75, Sheight-30 to Swidth-5, Sheight-10, "SaveDVDFS_", "Save", "SettingsView"
+		if (tooltips = 1) tooltip "SaveDVDFS_", "Save changes and close window"
+	fi
+
+	if (Type$ = "VideoDiskType") then
+		SFS		= VCDFS
+		if (SFS = 7) then
+			vcd1 = 0 : vcd2 = 1 : svcd = 0
+		elsif (SFS = 8) then
+			vcd1 = 0 : vcd2 = 0 : svcd = 1
+		else
+			SFS = 6 : VCDFS = 6
+			vcd1 = 1 : vcd2 = 0 : svcd = 0
+		fi
+		if (Svcdtvstandard = 2) then
+			vcdpal = 0 : vcdntsc = 1
+		else
+			Stvstandard = 1 : vcdtvstandard = 1
+			vcdpal = 1 : vcdntsc = 0
+		fi
+		if (VCDConvertType = 3) then
+			SConvertType = 3 : autoconvert = 0 : askconvert = 0 : neverconvert = 1
+		elsif (VCDConvertType = 2) then
+			SConvertType = 2 : autoconvert = 0 : askconvert = 1 : neverconvert = 0
+		else
+			SConvertType = 1 : VCDConvertType = 1
+			autoconvert = 1 : askconvert = 0 : neverconvert = 0
+		fi
+		radiobutton 10, 35, "VCD1", "VCD 1.1", vcd1, "SettingsView"
+		radiobutton 150, 35, "VCD2", "VCD 2", vcd2, "SettingsView"
+		radiobutton 10, 55, "SVCD", "SVCD", svcd, "SettingsView"
+		checkbox 150, 55, "HQVideo", "High quality", Shqvideo, "SettingsView"
+		view 0, 80 to Swidth, 120, "TVStandardView", "SettingsView"
+			draw set "bgcolor", r, g, b, "TVStandardView"
+			draw set "lowcolor", r, g, b, "TVStandardView"
+			draw set "Swis721 BT, Bold, 11", "TVStandardView"
+			draw text 10, 12, "TV standard", "TVStandardView"
+			radiobutton 10, 20, "TVPAL", "PAL", vcdpal, "TVStandardView"
+			radiobutton 150, 20, "TVNTSC", "NTSC", vcdntsc, "TVStandardView"
+		view 0, 125 to Swidth, 160, "ConvertView", "SettingsView"
+			draw set "bgcolor", r, g, b, "ConvertView"
+			draw set "lowcolor", r, g, b, "ConvertView"
+			draw set "Swis721 BT, Bold, 11", "ConvertView"
+			draw text 10, 12, "Converting", "ConvertView"
+			radiobutton 10, 20, "AutoConvert", "Auto", autoconvert, "ConvertView"
+			radiobutton 115, 20, "AskConvert", "Ask", askconvert, "ConvertView"
+			radiobutton 215, 20, "NeverConvert", "Never", neverconvert, "ConvertView"
+		button Swidth-75, Sheight-30 to Swidth-5, Sheight-10, "SaveVDT_", "Save", "SettingsView"
+		if (tooltips = 1) then
+			tooltip "VCD1", "VCD 1.1"
+			tooltip "VCD2", "VCD 2"
+			tooltip "SVCD", "SVCD"
+			tooltip "HQVideo", "Use high quality settings"
+			tooltip "SaveVDT_", "Save changes and close window"
+		fi
+	fi
+
+	if (Type$ = "CdrecordOptions") then
+		checkbox 10, 35, "BurnProof", "BurnProof", Sburnproof, "SettingsView"
+		checkbox 150, 35, "OverBurn", "Ignore size", Soverburn, "SettingsView"
+		checkbox 10, 57, "DAO", "Disc at once", Sdao, "SettingsView"
+		slider 10, 85 to 250, 105, "BurnSpeed", "Burn speed:", 1, 52, "horizontal", "SettingsView"
+		slider set "BurnSpeed", Sspeed
+		option color "BurnSpeed", "bgcolor", r, g, b
+		view 255, 100 to 290, 115, "SpeedText", "SettingsView"
+			draw set "bgcolor", r, g, b, "SpeedText"
+			draw set "lowcolor", r, g, b, "SpeedText"
+			draw set "Swis721 BT, Roman, 11", "SpeedText"
+			draw text 2, 13, str$(Sspeed)+"x", "SpeedText"
+		slider 10, 125 to 250, 145, "FifoBuff", "Fifo buffersize:", 0, 64, "horizontal", "SettingsView"
+		slider set "FifoBuff", fifo
+		option color "FifoBuff", "bgcolor", r, g, b
+		view 255, 140 to 290, 155, "FifoText", "SettingsView"
+			draw set "bgcolor", r, g, b, "FifoText"
+			draw set "lowcolor", r, g, b, "FifoText"
+			draw set "Swis721 BT, Roman, 11", "FifoText"
+			draw text 2, 13, str$(Sfifo)+"MB", "FifoText"
+		button 5, 170 to 75, 190, "CdRecordInfo_", "Info", "SettingsView"
+		button Swidth-75, Sheight-30 to Swidth-5, Sheight-10, "SaveCDR_", "Save", "SettingsView"
+		if (tooltips = 1) tooltip "SaveCDR_", "Save changes and close window"
+	fi
+
+	if (Type$ = "Interface") then
+		checkbox 10, 35, "ToolTips", "Tooltips", Stooltips, "SettingsView"
+		checkbox 150, 35, "FullWidth", "Full width", Sfullwidth, "SettingsView"
+		draw set "Swis721 BT, Roman, 11", "SettingsView"
+		draw set "highcolor", 220, 0, 0, "SettingsView" : draw set "highcolor", 220, 0, 0, "SettingsView"
+		draw text 10, 157, "Changes will take effect on next start!", "SettingsView"
+		draw set "highcolor", 0, 0, 0, "SettingsView"
+		draw text 13, 72, "Main color:", "SettingsView"
+		colorcontrol 10, 82, "ColorControl", "SettingsView"
+		colorcontrol set "ColorControl", r, g, b
+		option color "ColorControl", "bgcolor", r, g, b
+		button 5, 170 to 75, 190, "ResetIF_", "Defaults", "SettingsView"
+		button Swidth-75, Sheight-30 to Swidth-5, Sheight-10, "SaveIF_", "Save", "SettingsView"
+		if (tooltips = 1) then
+			tooltip "ResetIF_", "Set defaults"
+			tooltip "SaveIF_", "Save changes and close window"
+		fi
+	fi
+
+	if (Type$ = "Other") then
+		checkbox 10, 40, "InfPopp", "InfoPopper", Sinfpopp, "SettingsView"
+		checkbox 150, 40, "MkLink", "Link to JABA's directory", Smklink, "SettingsView"
+		checkbox 10, 64, "OwnProj", "Own projectpath", Sownproj, "SettingsView"
+		checkbox 150, 64, "DiscCheck", "Auto disc info", Sdisccheck, "SettingsView"
+		draw set "Swis721 BT, Roman, 10", "SettingsView"
+		draw set "highcolor", 220, 0, 0, "SettingsView" : draw set "highcolor", 220, 0, 0, "SettingsView"
+		draw set "highcolor", 0, 0, 0, "SettingsView"
+		draw text 10, 120, "Projectpath:", "SettingsView"
+		textcontrol 3, 125 to 290, 145, "OwnProjPath", "", ProjectsDir$, "SettingsView"
+		if (Sownproj = 0) option set "OwnProjPath", "enable", "false"
+		button 5, 170 to 75, 190, "ResetOS_", "Defaults", "SettingsView"
+		button Swidth-75, Sheight-30 to Swidth-5, Sheight-10, "SaveOS_", "Save", "SettingsView"
+		if (tooltips = 1) then
+			tooltip "OwnProjPath", "The project folder where you have acces to by default"
+			tooltip "ResetOS_", "Set defaults"
+			tooltip "SaveOS_", "Save changes and close window"
+		fi
+	fi
+
+	button Swidth-150, Sheight-30 to Swidth-80, Sheight-10, "Cancel_", "Cancel", "SettingsView"
+
+	if (tooltips = 1) then
+		tooltip "Cancel_", "Close window without saving"
+		tooltip "DeviceDrop", "Select your burner device"
+		tooltip "Joliet", "Joliet filesystem providing long filenames (standard)"
+		tooltip "IsoLong", "ISO with long filenames (up to 31 letters)"
+		tooltip "IsoShort", "ISO with short filenames (up to 8 letters + suffix)"
+		tooltip "Bfs", "Be fileSystem"
+		tooltip "Udf", "Filesystem for data DVDs"
+		tooltip "VUdf", "Filesystem for video DVDs"
+		tooltip "BurnProof", "Enable BurnProof"
+		tooltip "OverBurn", "Allow sizes bigger than 700MB (80min)"
+		tooltip "DAO", "Disc at once (else track at once - tao)"
+		tooltip "BurnSpeed", "Set the speed for burning"
+		tooltip "DeviceInfo_", "Info about the burner device"
+		tooltip "CdRecordInfo_", "Info about cdrecord"
+		tooltip "FifoBuff", "Change size of fifo buffer"
+		tooltip "ColorControl", "Change the main color - just try it"
+		tooltip "GUI1_", "The standard GUI"
+		tooltip "GUI2_", "The simple GUI"
+		tooltip "ToolTips", "When this is on, you can read this"
+		tooltip "InfPopp", "Turn InfoPopper support on or off"
+		tooltip "FullWidth", "Makes the main window full resizable"
+		tooltip "OwnProj", "Don't use the standard projectfolder"
+		tooltip "MkLink", "Create link from the project folder to JABA's directory"
+	fi
+	Setloop = true
+	while (Setloop)
+		msg$ = message$
+
+		if (split(msg$, cmd$(), ":|") > 2) choice$ = cmd$(2)
+		if (split(msg$, cmd$(), ":|") >= 4) then
+			Sr = val(cmd$(2))
+			Sg = val(cmd$(3))
+			Sb = val(cmd$(4))
+			window set "bgcolor", Sr, Sg, Sb, "SettingsView"
+			window set "lowcolor", Sr, Sg, Sb, "SettingsView"
+		fi
+
+		switch msg$
+
+			case "DeviceDrop:"+choice$+"|"
+				for nd = 1 to Ndev
+					if (choice$ = Drive$(nd)) then
+						SetDrive$	= Drive$(nd)
+						SetDevice$	= Device$(nd)
+						SetDriveNumber$ = str$(nd)
+					fi
+				next nd
+				draw flush "OnSettingsView"
+				draw text 10, 10, translate$("Device name")+": "+SetDrive$, "OnSettingsView"
+				draw text 10, 25, translate$("Device nr")+".: "+SetDevice$, "OnSettingsView"
+				break
+
+			case "Joliet|"
+				SFS = 1
+				break
+
+			case "IsoLong|"
+				SFS = 2
+				break
+
+			case "IsoShort|"
+				SFS = 3
+				break
+
+			case "Udf|"
+				SFS = 4
+				break
+
+			case "VUdf|"
+				SFS = 5
+				break
+
+			case "VCD1|"
+				SFS = 6
+				break
+
+			case "VCD2|"
+				SFS = 7
+				break
+
+			case "SVCD|"
+				SFS = 8
+				break
+
+			case "HQVideo:ON|"
+				Shqvideo = 1
+				break
+
+			case "HQVideo:OFF|"
+				Shqvideo = 0
+				break
+
+			case "ExtSettVcdAudio_|"
+				OpenExtendedSettings("VCD-Audio", "Audio settings", 300, 200)
+				break
+
+			case "ExtSettVcdVideo_|"
+				OpenExtendedSettings("VCD-Video", "Video settings", 300, 200)
+				break
+
+			case "CancelExtSett_|"
+				OpenExtendedSettings("close")
+				break
+
+			case "TVPAL|"
+				Stvstandard = 1
+				break
+
+			case "TVNTSC|"
+				Stvstandard = 2
+				break
+
+			case "AutoConvert|"
+				SConvertType = 1
+				break
+
+			case "AskConvert|"
+				SConvertType = 2
+				break
+
+			case "NeverConvert|"
+				SConvertType = 3
+				break
+
+			case "DeviceInfo_|"
+				GetDeviceInfo()
+				break
+
+			case "CdRecordInfo_|"
+				alert CdrecordVersion$, "OK", 1
+				break
+
+			case "BurnProof:ON|"
+				Sburnproof = 1
+				break
+
+			case "BurnProof:OFF|"
+				Sburnproof = 0
+				break
+
+			case "DAO:ON|"
+				Sdao = 1
+				break
+
+			case "DAO:OFF|"
+				Sdao = 0
+				break
+
+			case "OverBurn:ON|"
+				Soverburn = 1
+				break
+
+			case "OverBurn:OFF|"
+				Soverburn = 0
+				break
+
+			case "ToolTips:ON|"
+				Stooltips = 1
+				tooltip "OwnProjPath", "The project folder where you have acces to by default"
+				tooltip "ResetOS_", "Set defaults"
+				tooltip "SaveOS_", "Save changes and close window"
+				tooltip "ToolTips", "When this is on, you can read this"
+				tooltip "InfPopp", "Turn InfoPopper support on or off"
+				tooltip "FullWidth", "Makes the main window full resizable"
+				tooltip "OwnProj", "Don't use the standard projectfolder"
+				break
+
+			case "ToolTips:OFF|"
+				Stooltips = 0
+				tooltip "OwnProjPath", ""
+				tooltip "ResetOS_", ""
+				tooltip "SaveOS_", ""
+				tooltip "ToolTips", ""
+				tooltip "InfPopp", ""
+				tooltip "FullWidth", ""
+				tooltip "OwnProj", ""
+				break
+
+			case "InfPopp:ON|"
+				Sinfpopp = 1
+				break
+
+			case "InfPopp:OFF|"
+				Sinfpopp = 0
+				break
+
+			case "FullWidth:ON|"
+				Sfullwidth = 1
+				break
+
+			case "FullWidth:OFF|"
+				Sfullwidth = 0
+				break
+
+			case "MkLink:ON|"
+				Smklink = 1
+				break
+
+			case "MkLink:OFF|"
+				Smklink = 0
+				break
+
+			case "DiscCheck:ON|"
+				Sdisccheck = 1
+				break
+
+			case "DiscCheck:OFF|"
+				Sdisccheck = 0
+				break
+
+			case "OwnProj:ON|"
+				Sownproj = 1
+				textcontrol clear "OwnProjPath"
+				textcontrol set "OwnProjPath", SProjectsDir$
+				option set "OwnProjPath", "enable", "true"
+				break
+
+			case "OwnProj:OFF|"
+				Sownproj = 0
+				SProjectsDir$	= textcontrol get$ "OwnProjPath"
+				textcontrol clear "OwnProjPath"
+				textcontrol set "OwnProjPath", User_home$+"/config/settings/JABA_Projects"
+				option set "OwnProjPath", "enable", "false"
+				break
+
+			case "BurnSpeed:"+choice$+"|"
+				draw flush "SpeedText"
+				draw text 2, 13, choice$+" x", "SpeedText"
+				Sspeed = val(choice$)
+				break
+
+			case "FifoBuff:"+choice$+"|"
+				draw flush "FifoText"
+				draw text 2, 13, choice$+" MB", "FifoText"
+				Sfifo = val(choice$)
+				break
+
+			case "SaveDEV_|"
+				Drive$	= SetDrive$
+				Device$	= SetDevice$
+				DriveNumber$ = SetDriveNumber$
+				window close "SettingsView"
+				Setloop = false
+				break
+
+			case "SaveCDFS_|"
+				CDFS = SFS
+				window close "SettingsView"
+				if (CDType$ = "Data") CurrFS = CDFS
+				Setloop = false
+				break
+
+			case "SaveDVDFS_|"
+				DVDFS = SFS
+				DVDConvertType = SConvertType
+				window close "SettingsView"
+				if (CDType$ = "DVD") CurrFS = DVDFS
+				Setloop = false
+				break
+
+			case "SaveVDT_|"
+				if (VCDFS <> SFS and F(D) > 0) then
+					AnsVtAl = alert "You changed the video type."+"\n\n"+"You might have to re-encode the current files.", "Back", "OK", "", "stop"
+					if (AnsVtAl = 1) break
+				fi
+				VCDFS = SFS
+				hqvideo = Shqvideo
+				vcdtvstandard 	= Stvstandard
+				VCDConvertType	= SConvertType
+//				vcdtype			= Svcdtype
+				window close "SettingsView"
+				if (CDType$ = "Video") CurrFS = VCDFS
+				Setloop = false
+				break
+
+			case "SaveCDR_|"
+				dao = Sdao
+				speed = Sspeed
+				fifo = Sfifo
+				overburn = Soverburn
+				burnproof = Sburnproof
+				burnlinks = Sburnlinks
+				window close "SettingsView"
+				Setloop = false
+				break
+
+			case "SaveIF_|"
+				r = Sr : g = Sg : b = Sb
+				tooltips		= Stooltips
+				fullwidth		= Sfullwidth
+				window close "SettingsView"
+				Setloop = false
+				break
+
+			case "ResetIF_|"
+				Stooltips = 1
+				checkbox set "ToolTips", 1
+				Sfullwidth = 0
+				checkbox set "FullWidth", 0
+				Sr = 220 : Sg = 220 : Sb = 220
+				colorcontrol set "ColorControl", Sr, Sg, Sb
+				window set "bgcolor", Sr, Sg, Sb, "SettingsView"
+				window set "lowcolor", Sr, Sg, Sb, "SettingsView"
+				break
+
+			case "SaveOS_|"
+				infpopp		= Sinfpopp
+				ownproj		= Sownproj
+				mklink		= Smklink
+				disccheck		= Sdisccheck
+				if (ownproj = 0) then
+					ProjectsDir$	= User_home$+"/config/settings/JABA_Projects"
+				elsif (ownproj = 1) then
+					ProjectsDir$	= textcontrol get$ "OwnProjPath"
+					SProjectsDir$ 	= ProjectsDir$
+				fi
+				if (system("test -d \""+ProjectsDir$+"\"")) MkErr = system("mkdir \""+ProjectsDir$+"\"")
+				if (not system("test -L \""+ThisDir$+"/Projects\"")) RmErr = system("rm -rf \""+ThisDir$+"/Projects\"")
+				if (mklink = 1) 	LnErr = system("ln -s \""+ProjectsDir$+"\" \""+ThisDir$+"/Projects\" & ")
+				window close "SettingsView"
+				Setloop = false
+				break
+
+			case "ResetOS_|"
+				Sinfpopp = 1
+				checkbox set "InfPopp", 1
+				Sownproj = 0
+				checkbox set "OwnProj", 0
+				Smklink = 1
+				checkbox set "MkLink", 1
+				Sdisccheck = 1
+				checkbox set "DiscCheck", 1
+				textcontrol clear "OwnProjPath"
+				textcontrol set "OwnProjPath", User_home$+"/config/settings/JABA_Projects"
+				option set "OwnProjPath", "enable", "false"
+				break
+
+			case "Cancel_|"
+			case "SettingsView:_QuitRequested|"
+				abort = true
+				window close "SettingsView"
+				Setloop = false
+				break
+
+		end switch
+		sleep 0.01
+	wend
+	DisplayDriveInfo()
+	SaveSettings()
+
+	return
+end sub
+
+sub GetDeviceInfo()		// Cdrecord info
+	OpenBurnStateWindow(200, 50)
+	draw text 10, 30, "Getting info ...", "BurnStateView"
+	dim Dinfo$(1)
+	PrevInfoAlert$ = "" : InfoAlert$ = ""
+	DeviceInq$ = system$("cdrecord dev="+SetDevice$+" -checkdrive")
+	DeviceInq$ = right$(DeviceInq$, len(DeviceInq$)-len(CdrecordVersion$))
+	dinum = split(DeviceInq$, info$(), chr$(10))
+	if (dinum > 1) then
+		for ST = 1 to dinum
+			if (instr(info$(ST), ":")) then
+				STC = split(info$(ST), Dinfo$(), ":")
+				Dinfo$(STC-1) = trim$(Dinfo$(STC-1))
+				InfoText$ = translate$(Dinfo$(STC-1))+":"+Dinfo$(STC)
+				InfoAlert$ = PrevInfoAlert$+"\n"+InfoText$
+				PrevInfoAlert$ = InfoAlert$
+			fi
+		next ST
+	else
+		InfoAlert$ = translate$("Sorry, could get no info.")
+	fi
+	if (BurnStateWin) then
+		window close "BurnStateView"
+		BurnStateWin = false
+	fi
+	alert translate$("Device info")+":\n"+InfoAlert$+"\n", "OK", 0
+
+	return
+end sub
+
+sub LoadSettings(LoadSetFile$)
+	SaveSetFile$	= LoadSetFile$
+	ProjectsDir$		= User_home$+"/config/settings/JABA_Projects"
+	SProjectsDir$	= ProjectsDir$
+// Load defaults:
+	ProjectName$	= "New"
+	cdmode		= 1
+	dummy		= 0
+	DiscType$	= "CD"
+	BurnLinks$	= " -f"
+	// Settings
+
+	VCDConvertType 	= 1
+	VCDFS				= 6
+
+	speed		= 1
+	fifo			= 4
+	burnproof	= 0
+	burnlinks	= 1
+	hqvideo		= 0
+	tooltips		= 1
+	infpopp		= 1
+	fullwidth		= 0
+	ownproj		= 0
+	mklink		= 1
+	CDFS		= 1
+	DVDFS		= 4
+	DVDConvertType 	= 1
+
+	// BurnWin
+	stream		= 0		// Streaming
+	fix			= 1		// Fixate
+	dao			= 1		// Disc at once
+	eject		= 1		// Eject after nurn
+	qab			= 0		// Quit after burning
+	dircop		= 0		// direct copy
+	keepimg	= 0		// Keep image after burn
+	preemp		= 0		// Preemphasis
+	blforce		= 0		// Force Blanking
+	blfast		= 1		// Blank fast
+	blall			= 0		// Blank all
+	blsess		= 0		// Blank last session
+
+	copyprot	= 0		// Copy protection
+	musess		= 0		// Multisession
+	overburn	= 0		// disc > 80min.
+	disccheck	= 0 	// diskinfo
+
+	MainX = peek("DesktopWidth") : MainY = peek("DesktopHeight")
+	MainWinX = (MainX/2)-220 : MainWinY = (MainY/2)-150
+
+	if(open(#1,LoadSetFile$,"r")) then
+		prevtmp$ = ""
+		while (not eof(1))
+			tmp$ = prevtmp$+chr$(peek(#1))
+			prevtmp$ = tmp$
+		wend
+		close #1
+
+		z = token(tmp$, line$(), chr$(10))
+		ProjectName$	= line$(2)
+		DriveNumber$	= line$(3)
+		Drive$			= Drive$(val(line$(3)))
+		Device$			= Device$(val(line$(3)))
+		SProjectsDir$	= line$(4)
+		CDFS			= val(line$(5))
+		IMGFS			= val(line$(6))
+		DVDFS			= val(line$(7))
+		VCDFS			= val(line$(8))
+		hqvideo			= val(line$(9))
+		speed			= val(line$(10))
+		fifo				= val(line$(11))
+		burnproof		= val(line$(12))
+		stream			= val(line$(13))
+		fix				= val(line$(14))
+		dao				= val(line$(15))
+		eject			= val(line$(16))
+		qab				= val(line$(17))
+		dircop			= val(line$(18))
+		guitheme		= val(line$(19))			// not in use
+		preemp			= val(line$(20))
+		blforce			= val(line$(21))
+		copyprot		= val(line$(22))
+		musess			= val(line$(23))
+		overburn		= val(line$(24))
+		r				= val(line$(25))
+		g				= val(line$(26))
+		b				= val(line$(27))
+		MainWinX		= val(line$(28))
+		MainWinY		= val(line$(29))
+		DVDConvertType	= val(line$(30))
+		VCDConvertType	= val(line$(31))
+		tooltips			= val(line$(32))
+		infpopp			= val(line$(33))
+		fullwidth			= val(line$(34))
+		ownproj			= val(line$(35))
+		mklink			= val(line$(36))
+		vcdtvstandard 	= val(line$(37))
+		dvdtvstandard 	= val(line$(38))
+		disccheck		= val(line$(39))
+	else
+		OpenWizard()
+	fi
+
+	dim FS$(10)
+	FS$(0) = ""
+	FS$(1) = "Windows joliet"
+	FS$(2) = "ISO9660 31"
+	FS$(3) = "ISO9660 8.3"
+	FS$(4) = "UDF (Data-DVD)"
+	FS$(5) = "UDF (Video-DVD)"
+	FS$(6) = "VCD 1.1"
+	FS$(7) = "VCD 2"
+	FS$(8) = "SVCD"
+	FS$(9) = "CDDA"
+
+	if (ownproj = 1) ProjectsDir$ = SProjectsDir$
+
+	return
+end sub
+
+sub SaveSettings()
+	if (not WizardLoop) then
+		MainWinX = window get "MainView", "position-x"
+		MainWinY = window get "MainView", "position-y"
+	fi
+	if(open(#1,SaveSetFile$, "w")) then
+
+		print #1 AppName$+" - settingsfile - "+date$+" - "+time$
+		
+		print #1 ProjectName$
+		print #1 DriveNumber$
+		print #1 SProjectsDir$
+		print #1 str$(CDFS)
+		print #1 str$(IMGFS)
+		print #1 str$(DVDFS)
+		print #1 str$(VCDFS)
+		print #1 str$(hqvideo)
+		print #1 str$(speed)
+		print #1 str$(fifo)
+		print #1 str$(burnproof)
+
+		print #1 str$(stream)
+		print #1 str$(fix)
+		print #1 str$(dao)
+		print #1 str$(eject)
+		print #1 str$(qab)
+		print #1 str$(dircop)
+		print #1 str$(guitheme)			// not in use
+		print #1 str$(preemp)
+		print #1 str$(blforce)
+		print #1 str$(copyprot)
+
+		print #1 str$(musess)
+		print #1 str$(overburn)
+		print #1 str$(r)
+		print #1 str$(g)
+		print #1 str$(b)
+		print #1 str$(MainWinX)
+		print #1 str$(MainWinY)
+		print #1 str$(DVDConvertType)
+		print #1 str$(VCDConvertType)
+		print #1 str$(tooltips)
+
+		print #1 str$(infpopp)
+		print #1 str$(fullwidth)
+		print #1 str$(ownproj)
+		print #1 str$(mklink)
+		print #1 str$(vcdtvstandard)
+		print #1 str$(dvdtvstandard)
+		print #1 str$(disccheck)
+
+		close #1
+	else
+		alert "Could not save settings!", "OK", 3
+	fi
+	return
+end sub
+
+sub LoadProject(ProjectPath$)
+	ProjectInfo$ = trim$(system$("catattr JABA:project \""+ProjectPath$+"\""))
+	if (not instr(ProjectInfo$, ": string : jaba/project")) then
+		alert "File is no JABA-project!", "Oops!", 3
+		return
+	fi
+
+	if(open(#1,ProjectPath$,"r")) then
+		OpenBurnStateWindow(250, 50)
+		draw text 10, 30, translate$("Open project")+" ...", "BurnStateView"
+
+		prevtmp$ = ""
+		while (not eof(1))
+			tmp$ = prevtmp$+chr$(peek(#1))
+			prevtmp$ = tmp$
+		wend
+		close #1
+
+		z = split(tmp$, line$(), chr$(10))
+		ProjectName$	= line$(1)
+		Faudio			= val(line$(2))
+		CDType$		= line$(3)
+		if (line$(4) = "DVD") then
+			CDType$ = "DVD"
+			CurrFS = DVDFS
+		elsif (line$(4) = "CD") then
+			CurrFS = CDFS
+		else
+			CurrFS			= val(line$(4))
+		fi	
+	else
+		alert "Could not load project!", "OK", 3
+		return
+	fi
+
+	window hide "MainView"
+	view remove "InBoxView"
+	if (CDType$ = "Audio") then
+		AudioCdOptions()
+		window show "MainView"
+		D = 1 : F(D) = Faudio
+		NAF = split(system$("ls -L -1 \""+ProjectPath$+"_FILES\""), file$(), chr$(10))
+		for naf = 1 to F(D)
+			if (len(str$(naf)) = 1) NR$ = "00"+str$(naf)
+			if (len(str$(naf)) = 2) NR$ = "0"+str$(naf)
+			if (len(str$(naf)) = 3) NR$ = str$(naf)
+			AudioTmp$(naf) = TempDir$+"/Audio-"+NR$	+".wav"	//AudioTmp = How the audiofile is saved.
+			FileName$(D, naf) = right$(file$(naf), len(file$(naf))-4)
+			if (system("test -L \""+ProjectPath$+"_FILES/"+NR$+"_"+FileName$(D, naf)+"\"")) then
+				LnErr = system("ln -fs \""+ProjectPath$+"_FILES/"+NR$+"_"+FileName$(D, naf)+"\" "+AudioTmp$(naf)+" &")
+			else
+				CpErr = system("cp -rf \""+ProjectPath$+"_FILES/"+NR$+"_"+FileName$(D, naf)+"\" "+AudioTmp$(naf)+" &")
+			fi
+			ListItem$(D,naf) = "F  "+FileName$(D, naf)
+			ItemAdd(ListItem$(D,naf), naf-1)
+		next naf
+	elsif (CDType$ = "Data") then
+		CDFS = CurrFS
+		DataCdOptions()
+		window show "MainView"
+		CpErr = system("cp -rf \""+ProjectPath$+"_FILES\"/* "+TempDir$+" &")
+		OpenSubFolder("")
+	elsif (CDType$ = "Video") then
+		VCDFS = CurrFS
+		VideoCdOptions()
+		window show "MainView"
+		D = 1 : F(D) = Faudio
+		NAF = split(system$("ls -L -1 \""+ProjectPath$+"_FILES\""), file$(), chr$(10))
+		for naf = 1 to F(D)
+			if (len(str$(naf)) = 1) NR$ = "00"+str$(naf)
+			if (len(str$(naf)) = 2) NR$ = "0"+str$(naf)
+			if (len(str$(naf)) = 3) NR$ = str$(naf)
+			AudioTmp$(naf) = TempDir$+"/Video-"+NR$+".mpg"	//AudioTmp = How the videofile is saved.
+			FileName$(D, naf) = right$(file$(naf), len(file$(naf))-4)
+			if (system("test -L \""+ProjectPath$+"_FILES/"+NR$+"_"+FileName$(D, naf)+"\"")) then
+				LnErr = system("ln -fs \""+ProjectPath$+"_FILES/"+NR$+"_"+FileName$(D, naf)+"\" "+AudioTmp$(naf)+" &")
+			else
+				CpErr = system("cp -rf \""+ProjectPath$+"_FILES/"+NR$+"_"+FileName$(D, naf)+"\" "+AudioTmp$(naf)+" &")
+			fi
+			ListItem$(D,naf) = "F  "+FileName$(D, naf)
+			ItemAdd(ListItem$(D,naf), naf-1)
+		next naf
+	elsif (CDType$ = "DVD") then
+		DVDFS = CurrFS
+		DVDOptions()
+		window show "MainView"
+		CpErr = system("cp -rf \""+ProjectPath$+"_FILES\"/* "+TempDir$+" &")
+		OpenSubFolder("")
+	elsif (CDType$ = "ImageMode") then
+		IMGFS = CurrFS
+		ImageOptions()
+		window show "MainView"
+		D = 1 : F(D) = Faudio
+		NAF = split(system$("ls -L -1 \""+ProjectPath$+"_FILES\""), file$(), chr$(10))
+		for naf = 1 to F(D)
+			if (len(str$(naf)) = 1) NR$ = "00"+str$(naf)
+			if (len(str$(naf)) = 2) NR$ = "0"+str$(naf)
+			if (len(str$(naf)) = 3) NR$ = str$(naf)
+			AudioTmp$(naf) = TempDir$+"/Image-"+NR$		//AudioTmp = How the imagefile is saved.
+			FileName$(D, naf) = right$(file$(naf), len(file$(naf))-4)
+			if (system("test -L \""+ProjectPath$+"_FILES/"+NR$+"_"+FileName$(D, naf)+"\"")) then
+				LnErr = system("ln -fs \""+ProjectPath$+"_FILES/"+NR$+"_"+FileName$(D, naf)+"\" "+AudioTmp$(naf)+" &")
+			else
+				CpErr = system("cp -rf \""+ProjectPath$+"_FILES/"+NR$+"_"+FileName$(D, naf)+"\" "+AudioTmp$(naf)+" &")
+			fi
+			ListItem$(D,naf) = "F  "+FileName$(D, naf)
+			ItemAdd(ListItem$(D,naf), naf-1)
+		next naf
+
+	fi
+	CurrentProject$ = ProjectPath$
+	window hide "MainView"
+	DrawStatus()
+	window show "MainView"
+	sleep 0.01
+	ProjectNamed = true
+	window close "BurnStateView"
+	BurnStateWin = false
+	return
+end sub
+
+sub SaveProject(ProjectPath$)
+	OpenBurnStateWindow(250, 50)
+	draw text 10, 30, translate$("Save project")+" ...", "BurnStateView"
+	if (not system("test -d \""+ProjectPath$+"_FILES\"")) RmErr = system("rm -rf \""+ProjectPath$+"_FILES\" &")
+	MkErr = system("mkdir \""+ProjectPath$+"_FILES\"")
+	if (CDType$ = "Audio" or CDType$ = "Video" or CDType$ = "ImageMode") then
+		D = 1
+		for naf = 1 to F(D)
+			if (len(str$(naf)) = 1) NR$ = "00"+str$(naf)
+			if (len(str$(naf)) = 2) NR$ = "0"+str$(naf)
+			if (len(str$(naf)) = 3) NR$ = str$(naf)
+			CpErr = system("cp -rf "+AudioTmp$(naf)+" \""+ProjectPath$+"_FILES/"+NR$+"_"+FileName$(D, naf)+"\" &")
+		next naf
+	elsif (CDType$ = "Data" or CDType$ = "DVD") then
+		CpErr = system("cp -prf "+TempDir$+"/* \""+ProjectPath$+"_FILES\" &")
+	fi
+	if(open(#1,ProjectPath$, "w")) then
+		print #1 ProjectName$
+		print #1 str$(F(D))
+		print #1 CDType$
+		print #1 str$(CurrFS)
+		close #1
+		AddErr = system("addattr -t string JABA:project jaba/project \""+ProjectPath$+"\" &")
+		ProjectNamed = true
+	else
+		AddErr = true
+	fi
+	if (AddErr) then
+		draw flush "BurnStateView"
+		draw text 10, 30, "An error occured!", "BurnStateView"
+		alert "Error while saving projectfile!", "OK", 3
+		sleep 0.8
+	fi
+	window close "BurnStateView"
+	BurnStateView = false
+
+	return
+end sub
+
+sub OpenWizard()
+	WX = (MainX/2)-150 : WY = (MainY/2)-75
+	window open WX, WY to WX+300, WY+150, "MainView", "Welcome to JABA!"
+		window set "flags", "not-h-resizable, not-v-resizable, not-zoomable", "MainView"
+	view 0, 0 to 300, 150, "WizardView", "MainView"
+		draw set "lowcolor", 170, 170, 170, "WizardView"
+		draw line 0, 28 to 305, 28, "WizardView"
+		draw set "lowcolor", r+30, g+30, b+30, "WizardView"
+		draw line 0, 29 to 305, 29, "WizardView"
+		draw set "lowcolor", r, g, b, "WizardView"
+	view 0, 0 to 300, 27, "WizardTitleView", "WizardView"
+		draw set "bgcolor", r-20, g-20, b-20, "WizardTitleView"
+		draw set "lowcolor", r-20, g-20, b-20, "WizardTitleView"
+		draw set "Swis721 BT, Bold, 18", "WizardTitleView"
+		draw text 5, 21, "JABA - first use setup", "WizardTitleView"
+	view 0, 30 to 290, 115, "WizardTextView", "WizardView"
+		draw set "bgcolor", 216, 216, 216, "WizardTextView"
+		draw set "lowcolor", 216, 216, 216, "WizardTextView"
+		draw set "Swis721 BT, Bold, 11", "WizardTextView"
+		draw text 18, 22, "This is the first time you use JABA!", "WizardTextView"
+		draw set "Swis721 BT, Roman, 10", "WizardTextView"
+		draw text 28, 40, "Then you should make some settings first.", "WizardTextView"
+		draw text 28, 55, "You can do that step by choosing the", "WizardTextView"
+		draw text 28, 70, "settings you want to setup.", "WizardTextView"
+	button 5, 120 to 295, 140, "StartWizard_", "Start setup", "WizardView"
+	
+	WizardLoop = true
+	while (WizardLoop)
+		msg$ = message$
+		switch msg$
+			case "MainView:_QuitRequested|"
+				exit : break
+
+			case "StartWizard_|"
+				if (WS = 0) then
+					option set "StartWizard_", "label", translate$("Cancel setup")
+					draw flush "WizardTextView"
+					draw set "Swis721 BT, Roman, 12", "WizardTextView"
+					draw text 10, 20, "You should control these settings:", "WizardTextView"
+					checkbox 12, 35, "BurnDev", "Burner device", 0, "WizardTextView"
+					checkbox 12, 55, "CDRopts", "Cdrecord options", 0, "WizardTextView"
+					WS = WS+1
+				else
+					if (burndevdone = 0 or cdroptsdone = 0) then
+						AlAns = alert translate$("_Wiz_Not_Set"), "Cancel", "Start JABA", "Back", "warning"
+						if (AlAns = 1) exit
+						if (AlAns = 2) WizardLoop = false
+					else
+						WizardLoop = false
+					fi
+				fi
+				break
+
+			case "BurnDev:ON|"
+				OpenSettings("Devices", 300, 200)
+				if (cdroptsdone = 0) then
+					if (abort = false) then
+						burndevdone = 1
+						checkbox set "BurnDev", 1
+					elsif (abort = true)
+						burndevdone = 0
+						checkbox set "BurnDev", 0
+					fi
+				fi
+				break
+
+			case "CDRopts:ON|"
+				OpenSettings("CdrecordOptions", 300, 200)
+				if (cdroptsdone = 0) then
+					if (abort = false) then
+						cdroptsdone = 1
+						checkbox set "CDRopts", 1
+					elsif (abort = true)
+						cdroptsdone = 0
+						checkbox set "CDRopts", 0
+					fi
+				fi
+				break
+
+			case "BurnDev:OFF|"
+				if (burndevdone = 1) checkbox set "BurnDev", 1
+				OpenSettings("Devices", 300, 200)
+				break
+
+			case "CDRopts:OFF|"
+				if (cdroptsdone = 1) checkbox set "CDRopts", 1
+				OpenSettings("CdrecordOptions", 300, 200)
+				break
+
+		end switch
+		if (burndevdone = 1 and cdroptsdone = 1) option set "StartWizard_", "label", translate$("Start JABA")
+		sleep 0.01
+	wend
+	window close "MainView"
+	sleep 0.3
+	return
+end sub
+
+sub AboutWindow()
+	AX = window get "MainView", "position-x"
+	AY = window get "MainView", "position-y"
+	MainWidth = window get "MainView", "width"
+	AX = AX+(MainWidth/2)-150 : AY = AY
+	window open AX, AY to AX+299, AY+336, "About", "About JABA"
+	window set "look", "modal", "About"
+	window set "feel", "modal-app", "About"
+	window set "flags", "not-h-resizable, not-v-resizable", "About"
+	window set "bgcolor", 230, 0, 0, "About"
+	if (draw image 0, 0, ThisDir$+"/Icons/About.png", "About") then
+		alert "Error loading About.png", "Oops!", 3
+	fi
+	button 2, 311 to 299, 331, "CloseAbout_", "Impressive!", "About"
+
+	draw set "lowcolor", 180, 0, 0, "About"
+	draw line 3, 234 to 296, 234, "About"
+	draw line 3, 234 to 3, 309, "About"
+	draw set "lowcolor", 255, 60, 60, "About"
+	draw line 4, 309 to 296, 309, "About"
+	draw line 296, 235 to 296, 309, "About"
+
+	view 4, 235 to 295, 308, "TextView", "About"
+		window set "bgcolor", 210, 0, 0, "TextView"
+		window set "lowcolor", 210, 0, 0, "TextView"
+		window set "highcolor", 255, 255, 255, "TextView"
+		draw set "Swis721 BT, Bold, 12", "TextView"
+
+	AL = 0
+	AboutLoop = true
+	while (AboutLoop)
+		msg$ = message$
+		Jott$ = keyboard message$("About")
+		window hide "TextView"
+		draw flush "TextView"
+		draw set "Swis721 BT, Bold, 12", "TextView"
+		draw text 7, 90-AL, AppName$, "TextView"
+		draw set "Swis721 BT, Roman, 11", "TextView"
+		draw text 7, 110-AL, "It's just a GUI for cdrecord...  ", "TextView"
+		draw text 7, 125-AL, "Written in yab - yet another basic   ", "TextView"
+		draw text 7, 140-AL, "Author: Das Jott     ", "TextView"
+		draw set "Swis721 BT, Bold, 12", "TextView"
+		draw text 7, 165-AL, "A big THANX to all the people who helped me! ", "TextView"
+		draw text 7, 190-AL, "Special thanks to", "TextView"
+		draw set "Swis721 BT, Roman, 11", "TextView"
+		draw text 7, 205-AL, "Jörg Schilling  ", "TextView"
+		draw text 7, 220-AL, "Marc-Oliver Ihm  ", "TextView"
+		draw text 7, 235-AL, "Jan__64  ", "TextView"
+		draw text 7, 250-AL, "Ralf Schülke aka. Stargater  ", "TextView"
+		draw text 7, 265-AL, "Genki  ", "TextView"
+		draw text 7, 280-AL, "Begasus  ", "TextView"
+		draw text 7, 295-AL, "Frank Paul Silye  ", "TextView"
+		draw text 7, 310-AL, "JPBE.net for the japanese localization ", "TextView"
+		draw text 7, 325-AL, "of course the TEAM maui   ", "TextView"
+		draw set "Swis721 BT, Bold, 12", "TextView"
+		draw text 7, 350-AL, "and to the testers:", "TextView"
+		draw set "Swis721 BT, Roman, 11", "TextView"
+		draw text 7, 365-AL, "backupwww (Thanks a lot! :) ", "TextView"
+		draw text 7, 380-AL, "Robert Stiehler aka. Negr0 ", "TextView"
+		draw text 7, 395-AL, "Gerhard Klein ", "TextView"
+		draw text 7, 410-AL, "Lukas_Lin ", "TextView"
+		draw text 7, 425-AL, "thaflo ", "TextView"
+		draw set "Swis721 BT, Bold, 12", "TextView"
+		draw text 7, 450-AL, "Used binaries: ", "TextView"
+		draw set "Swis721 BT, Roman, 11", "TextView"
+		draw text 7, 465-AL, "cdrecord, mkisofs, readcd, cdda2wav, catattr, addattr, ", "TextView"
+		draw text 7, 480-AL, "mkdir, test, sysinfo, tcode, ls, ln, cp, mv, rm, hey, ", "TextView"
+		draw text 7, 495-AL, "infopopper, fortune. ", "TextView"
+		window show "TextView"
+		if (AL = 510) AL = 0
+		AL = AL+1
+		sleep 0.075
+		if (msg$ = "CloseAbout_|") then
+			if (Jott$ = "J") then
+				alert "And it burns burns burns ...\n\nCongratulations,\nyou found the easter-egg!!!\n\nHere's a fortune for you:\n\n"+system$("fortune")+"\n\nGreetings from Jörn Weigend aka. Das Jott ;-)", "Cool!", 1
+			elsif (Jott$ = "P") then
+				alert "\npriority\n", "Hehe", 0
+			else
+				AboutLoop = false
+				window close "About"
+			fi
+		fi
+	wend
+	return
+end sub
+
+sub AllignRight(thelimit, theheight, TheNumber$, TheView$, stepwidth)
+	if (stepwidth = 0) stepwidth = 5
+	if (split(TheNumber$, item$(), ".") > 1) then
+		draw text thelimit-(((len(item$(2))*stepwidth)+1+(len(item$(1))*stepwidth))), theheight, item$(1), TheView$
+		draw text thelimit-(len(item$(2))*stepwidth), theheight, "."+item$(2), TheView$
+	else
+		draw text thelimit-(len(TheNumber$)*stepwidth), theheight, TheNumber$, TheView$
+	fi
+	return
+end sub
+
+

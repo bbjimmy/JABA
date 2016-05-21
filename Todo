@@ -1,0 +1,11 @@
+make settingsview a stackview and build all type views on launch. This will fix the tooltip issues.
+have the settingsview type view check the tooltip flag on activation of the view.
+
+
+if tooltip then
+tooltip widget$, widgetstring$
+else
+tooltip widget$, ""
+endif
+
+The only view that needs to change from this is the one with the tiiltip checkbox. It needs to be changed on set / unset of the checkbox.

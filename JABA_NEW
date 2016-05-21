@@ -1,0 +1,95 @@
+Changes to beta7:
+
+DELETE THE SETTINGSFILE BEFORE USING THIS NEW VERSION!
+I had to do some changes in that section for a few advantages.
+
+Improvements:
+- InfoPopper now contains the JABA icon.
+- Status everytime, when dropping items.
+- Removed the typos in the built-in english-locale.
+- Improved direct disc copying: JABA takes care that the reading device is a bit faster than the writing one - automaticly.
+- Localized the Cdrecord info as far as I could.
+- Improved the "First-start-setup" once again.
+
+News:
+- Main window opens there, where it was closed before - but it's zoomed to minimum.
+- Cancel button in drop-Statuswindow - does not work on big single folders (like 'home').
+- Added Blank option "Unclose last session", which removes the fixation of the last session of a multisession-disc.
+- Projects folder is now per default /boot/home/config/settings/JABA_Projects
+	JABA creates a link to it from JABA folder - if you want.
+- Standard project folder path costumizable.
+- Direct-copy now also for Audio
+- New settings - "Other":
+	Tooltips on/off
+	InfoPopper on/off
+	Allow full width for the main window
+	Own Projectpath
+	Create Link from project folder to JABA' folder on/off
+- Added funny easter-egg(s)
+
+All new locale strings: (changes in blue)
+
+"for"
+
+# Main menu
+"About JABA" instead of "About"
+"Introduction"
+"Help"
+"JABA-Help"
+
+# Burnwindow
+"Unclose last session"
+"Copy - speed settings"
+
+# Settings window
+"Ignore size" instead of "Size > 700MB"
+"Other"
+"Projectpath:"
+"Tooltips"
+"InfoPopper"
+"Full width"
+"Own projectpath"
+"Link to JABA's directory"
+
+# Tooltips
+"Set defaults" instead of "Set default colors"
+"Remove fixation from last session"
+"When this is on, you can read this"
+"Turn InfoPopper support on or off"
+"Makes the main window full resizable"
+"Don't use the standard projectfolder"
+"The project folder where you have acces to by default"
+
+# Messages
+"Could not save settings!"
+"Adding items ..."
+"No Audiofile!"
+"Clear things up ..."
+"Error while saving projectfile!"
+"Getting info ..."
+"Could not open CUE-file!"
+"No file information found in CUE-file!"
+"Required files not found!"
+"Error while preparing!"
+"Preparing ..."
+
+# Wizard
+"Cancel setup" instead of "Quit setup"
+"_Wiz_Not_Set"		"You didn't set all required settings!\nYou can do that later via the settings menu."
+"Start JABA"
+
+# Info
+"Device info"			
+"Device type"			
+"Version"				
+"Response Format"		
+"Capabilities"			
+"Vendor_info"			
+"Identifikation"			
+"Revision"				
+"Device seems to be"		
+"Driver flags"			
+"Supported modes"		
+
+"Sorry, could get no info."
+

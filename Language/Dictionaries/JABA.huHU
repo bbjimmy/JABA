@@ -1,0 +1,308 @@
+# German localfile for JABA - just another burning app.
+# Created by das Jott at team-maui.de
+# The Hungarian translation by Miqlas, miqlas@beos.hu
+
+"Welcome to JABA!"	"Köszöntünk a JABA-ban!"
+"Please select a mode!"	"Kérlek, válassz üzemmódot!"
+"for"				"für"								######magyar nyelvben nem értelmezhető...
+
+# Modes:
+"Audio disc"		"Audiólemez"
+"Data disc"			"Adatlemez"
+
+# Main menu:
+"File"				"Fájl"
+"New project"		"Új projekt"
+"Open project"		"Projekt megnyitása"
+"Save project"		"Projekt mentése"
+"Save project as"		"Projekt mentése más néven"
+"Quit"				"Kilépés"
+"Image"			"Képfájl"
+"Create image"		"Képfájl létrehozása"
+"Read disc image"	"Lemez beolvasása képfájlként"
+"Burn image"		"Képfájl kiírása"
+"Burn cuefile"		"Cue-fájl kiírása"
+"Disc"			"Lemez"
+"Blank disc"			"Üres lemez"
+"Copy disc"			"Lemez másolása"
+"Fixate disc"		"Lemez lezárása"
+"Settings"			"Beállítások"
+"Burner device"		"Író eszköz"
+"Cdrecord options"	"Cdrecord beállítások"
+"Data filesystem"		"Fájlrendszer"
+"Interface"			"Csatoló"
+"List"				"Lista"
+"Show names"		"Név megjelenítése"
+"Show paths"		"Elérési út megjelenítése"
+"Move up"			"Mozgatás felfelé"
+"Move down"		"Mozgatás lefelé"
+"Remove file"		"Fájl eltávolítása"
+"Remove all"		"Lista törlése"
+"Introduction"		"Bevezető"
+"Help"			"Súgó"
+"JABA-Help"			"A JABA súgója"
+"About JABA"		"A JABA névjegye"
+
+# Main window:
+"Burn it!"			"Írás!"
+"Burn simulation"		"Szimulált írás"
+"Project settings:"		"Projekt:"
+"Type:"			"Típus:"
+"Path"			"Elérési út"
+"No drive"			"Meghajtó nem található"
+"Type in the name for the new folder:"	"Add meg az új könyvtár nevét:"
+"Boot image"		"Rendszerindító képfájl"
+
+# Status- and infodisplay:
+"Number of folders:"	"Könyvtárak száma:"
+"Number of files:"		"Fájlok száma:"
+"Disc size:"			"Lemez kapacitása:"
+"Burner"			"Író"
+"Filesystem"		"Fájlrendszer"
+"Project name:"		"Projekt neve:"
+"Multisession"		"Többmenetes lemez"					######>>>miez?
+"Copy protection"		"Másolásvédelem"
+
+# Burnwindow:
+"Name"					"Név"
+"Device"					"Eszköz"
+"Streaming"					"Streaming"			#####
+"Fixate"					"Lezárás"
+"Last session"				"Utolsó menet"			##############mi is ez?????????
+"Disc at once"				"Lemez egy lépésben"			##########Neroban megnézzük..
+"50/15 preemphasis"			"50/15 preemphasis"
+"Eject disc when finished"		"Lemez kiadása, ha kész"
+"Keep image and save as"		"Képfájlként mentés"		######ezt nem vágom
+"Quit when finished"			"Kilépés, ha kész"
+"Cancel"					"Mégsem"
+"Burn!"					"Írás!"
+
+"Source:"					"Forrás:"
+"Copy data disc"				"Adatlemez másolása"
+"Copy audio disc"				"Audiólemez másolása"
+"On the fly"					"CD írás röptében"
+"Copy!"					"Másolás!"
+
+"Note: JABA can only read images from data discs!!"	"Figyelmeztetés: A JABA csak adatlemezekből tud képfájlt készíteni!"
+"Read from:"							"Forrás:"			###Forrás???
+"Read it!"								"Beolvasás!"
+
+"Blank fast"					"Gyorstörlés"
+"Blank all"					"Teljes törlés"
+"Blank last session"			"Utolsó menet törlése"		##mi az a session
+"Unclose last session"			"Utolsó menet megnyitása"			##-||-
+"Force blanking"				"Kényszerített törlés"
+"Do it!"					"Hajrá!"
+
+"Fixate!"					"Lezárás!"					
+"Create it!"					"Létrehozás!"					
+"Save as"					"Mentés másként"
+"Filesystem"				"Fájlrendszer"
+
+# Settings window:
+"Please select your burner:"	"Válaszd ki az íródat:"
+"Devices:"				"Eszközök:"
+"Device name"			"Eszköz neve"
+"Device no"				"Eszköz sorozatszáma"
+"Info"					"Infó"
+"Save"				"Mentés"
+
+"BurnProof"				"BurnProof"
+"Ignore size"			"Túlírás"
+"Force blanking RW"		"RW kényszerített törlése"		###Force
+"Best audio quality"		"Legjobb audió minőség"
+"Burn speed:"			"Írási sebesség:"
+"Fifo buffersize:"			"Fifo buffer mérete:"
+
+"UDF (Data-DVD)"			"UDF (Adat-DVD)"
+"UDF (Video-DVD)"		"UDF (Videó-DVD)"
+
+"Standard GUI"					"Alap"
+"Simple GUI"					"Egyszerü"
+"Main color:"					"Szín:"
+"Changes will take effect on next start!"	"A változtatások érvényre lépéséhez újra kell indítanod a programot!"
+"Defaults"						"Alapbeállítás"
+
+"Other"						"Egyebek"
+"Tooltips"						"Gyorstipp"			###
+"Link to JABA's directory"			"A JABA könyvtára"
+"InfoPopper"					"InfoPopper"
+"Full width"						"Teljes szélesség"
+"Own projectpath"				"Saját projek útvonala"
+"Projectpath:"					"A Projekt elérési útja:"
+
+# Tooltips:
+"Burn audio disc"		"Audiólemez írása"
+"Burn data disc"		"Adatlemez írása"
+
+"Create multisession discs"						"Többmenetes lemez létrehozása"			
+"HiFi audioburner may recognize this"				"Hifi-Audióíró által támogatott"		#########
+"Enter project name here"						"Adja meg a projekt nevét"
+
+"Close window without saving"					"Ablak bezárása mentés nélkül"
+"Select your burner device"						"Válaszd ki az íródat"
+"Joliet filesystem providing long filenames (standard)"		"Joliet fájlrendszer hosszú fájlnevekkel"
+"ISO with long filenames (up to 31 letters)"				"ISO, hosszú fájlnevekkel (31 karakter)"
+"ISO with short filenames (up to 8 letters + suffix)"		"ISO, rövid fájlnevekkel (8karakter + kiterjesztés"
+"Be fileSystem"								"ZETA fájlrendszer"
+"Filesystem for data DVDs"						"Adat-DVD fájlrendszer"
+"Filesystem for video DVDs"						"Videó-DVD fájlrendszer"
+"Enable BurnProof"							"BurnProof engedélyezése"
+"Allow sizes bigger than 700MB (80min)"				"700MBnál (80min) nagyobb méret engedélyezése"		####
+"Force blanking - even if there occur errors while blanking"	"Kényszerített törlés - még ha hiba is történik"	####
+"Set the speed for burning"						"Írási sebesség beállítása"
+"Change size of fifo buffer"						"Fifo buffer méretének beállítása"
+"Change the main color - just try it"					"Alapszín - próbáld ki"			####
+"The standard GUI"							"Alap kinézet"
+"The simple GUI"								"Egyszerü kinézet"
+"Set defaults"									"Alapbeállítások"		######
+"Use error correction while copying audio discs"		"Hibajavítás használata audiólemezek másolásakor"
+
+"Disc at once (else track at once - tao)"											"Lemez létrehozása egy lépésben (tao helyett)"
+"Fixate disc after burning"													"Lemez lezárása az írás befejezése után"
+"Eject disc after burning"													"A lemez kiadása az írás befejeztével"
+"Writes info to toc, that audiofiles have been recorded with preemphasis - does not affect the files!"	"Schreibt eine Info in den toc, dass die Audiodateien mit Preemphasis aufgenommen wurden - wirkt sich nicht auf die Dateien aus!"
+"Write data direct to the disc"													"Adatok írása közvetlenül a lemezre"
+"Copy audio disc"															"Audiólemez másolása"
+"Copy data disc"															"Adatlemez másolása"
+"Select the device to copy from"												"A lemezmásolás céleszköze"
+"Select the device to read from"												"A lemezmásolás forráseszköze"
+"Blank disc fast (delete toc)"													"Gyorstörlés (toc törlése)"
+"Blank complete disc"														"Teljes lemez törlése"
+"Blank last session of a multisession disc"										"A lemez utolsó menetének törlése"
+"Remove fixation from last session"											"Többmenetes lemez lezárásának feloldása"
+"Create new folder"														"Új könyvtár létrehozása"
+
+"Create audio disc"		"Audiólemez létrehozása"
+"Create data disc"			"Adatlemez létrehozása"
+"Burn imagefile"			"Képfájl kiírása"
+"Burn cuefile"				"CUE-fájl kiírása"
+"Read image from disc"		"Képfájl beolvasása lemezről"
+"Burn project"			"Projekt kiírása"
+"Create new folder"		"Új könyvtár létrehozása"
+
+"One directory up"			"Egy könyvtárral feljebb"
+"Play soundfile"				"Hangfájl lejátszása"
+"Move selected file up"			"A kijelölt fájl mozgatása felfelé"
+"Move selected file down"		"A kijelölt fájl mozgatása lefelé"
+"Remove selected file from list"		"A kijelölt fájl törlése a listáról"
+
+"Shows used space on the disc to be burned"			"Zeigt den gebrauchten Platz auf der zu brennenden Disk an"
+"Shows the path you're watching the content of"		"Zeigt den Pfad dessen Inhalt in der Liste zu sehen ist"
+"Please drop files/folders here to get them into the list"		"A listára vételhez dobj ide fájlokat/mappákat"
+"Execute burning with laser turned off"				"Szimulált írás"
+
+"Burn imagefile"								"Képfájl kiírása"
+"Create imagefile"								"Képfájl készítése"
+"Fixate unfixated disc"							"Lemez lezárása"
+"Save changes and close window"					"Beállítások mentése és az ablak bezárása"
+"When this is on, you can read this"					"Ha ez be van kapcsolav, akkor ezt el tudod olvasni"
+"Turn InfoPopper support on or off"					"InfoPopper-támogatás be- ill. kikapcsolása"
+"Makes the main window full resizable"				"A főablak átméretezhető"
+"Don't use the standard projectfolder"				"Ne használjuk az alapértelmezett projektkönyvtárat"
+"The project folder where you have acces to by default"	"Az alapértelmezésben elérhető project könyvtár"
+"Create link from the project folder to JABA's directory"		"A projekt könyvtárból link készítése a JABA könyvtárába"
+
+"Impressive!"	"Hatásos!"
+
+# Status messages:
+"Burning audiodisc ..."				"Audiólemez írása ..."
+"Burning datadisc ..."				"Adatlemez írása ..."
+"Burning first session ..."			"Első menet írása ..."
+"Burning new session ..."			"Következő menet írása ..."
+"Copying disc ..."					"Lemez másolása ..."
+"Prepare multisession ..."			"Többmenetes lemez előkészítése ..."
+"Prepare ..."						"Előkészítés ..."
+"Converting to wav ..."				"Konvertálás wav-ba ..."
+"Creating imagefile ..."				"Képfájl készítése ..."
+"Blanking ..."						"Törlés ..."
+"Reading audiofiles ..."				"Audiófájlok olvasása ..."
+"Reading imagefile ..."				"Képfájl olvasása ..."
+"Burning image ..."				"Képfájl írása ..."
+"Burning tracks ..."				"Sávok írása ..."
+"Clear things up ..."				"Rendrakás ..."
+"Adding items ..."					"Elemek hozzáadása ..."
+"Getting info ..."					"Infó kérése ..."
+
+# Error messages:
+"An error occured!"				"Hiba történt!"
+"Error while converting!"			"Hiba történt a konvertálás közben!"
+"Error creating imagefile!"			"Hiba történt a képfájl létrehozása közben!"
+"Error while blanking!"				"Hiba történt a lemez törlése közben!"
+"Error while burning!"				"Hiba történt a lemez írása közben!"
+"Error while burning!\n"				"Hiba történt a lemez írása közben!\n"
+"Error while saving projectfile!"		"Hiba történt a projektfájl mentése közben!"
+"Error while preparing!"				"Hiba történt az előkészítés folyamán!"
+"Error reading cuefile!"				"Hiba történt a CUE-fájl olvasása közben!"
+"Error creating folder!"				"Hiba történt a könyvtár létrehozása közben!"
+"Error while adding"				"Hiba történt a hozzáadás közben"
+"Error while saving projectfile!"		"Hiba történt a projektfájl mentése közben!"
+"Damned!"						"Ajaj !"
+
+"Could not add"					"Nem lehet hozzáadni"
+"Could not open CUE-file!"			"Nem lehet megnyitni a CUE fájlt!"
+"Could not save settings!"			"Nem lehet menteni a beállításokat!"
+"Could not load project!"			"Nem lehet betölteni a projektet!"
+"Could not save projectfile!"			"Nem lehet menteni a projektfájlt!"
+"Could not save settings!"			"Nem lehet menteni a beállításokat!"
+
+"Some files may not be added!"							"Néhány fájl nem lett hozzáadva!"
+"Required files not found!"								"Egy vagy több szükséges fájl hiányzik!"
+"Not enough free disk space for creating the image!"		"Nincs elég szabad lemezterület a képfájl létrehozásához!"
+"File is no JABA-project!"								"Ez a fájl nem JABA projekt !"
+"Sorry, not implemented yet!"							"Sajnos, ez még nincs beépítve a programba!"
+"No file information found in CUE-file!"						"A CUE fájlban nem találhatók a fájlinfomációk!"
+"No Audiofile!"											"Nem audiófájl!"
+"_Save_Or_Not"										"Falls Sie ihr Projekt speichern möchten,\nklicken Sie auf 'Zurück'."
+"Back"												"Vissza"
+"Go on"												"Tovább"
+
+# Other messages
+"Please select a mode first."										"Először válaszd ki az üzemmódot."
+"Please drop only audiofiles in audiomode!"							"Audiómódban csak audiófájlokat dobj ide!"
+"JABA can only create datafile images.\nPlease change to data mode."	"A JABA csak adat képfájlokat tud létrehozni.\nVálts át adat módba."
+"Please drop some files into the window first."						"Kérlek, először dobd ide fájlokat."
+"Created imagefile.\nPlease insert the target-disc now."				"A képfájl elkészült.\nHelyezd be a céllemezt."
+"Loaded audiofiles.\nPlease insert the target-disc now."				"Az audiófájlok betöltése kész.\nHelyezd be a céllemezt."
+"Blanked succesful!"											"A lemez törlése elkészült!"
+"Burning succesful!"											"A CD írás elkészült!"
+"Ready!"														"Kész!"
+
+# Wizard:
+"JABA - first use setup"						"JABA - első indítás"
+"This is the first time you use JABA!"			"Ez az első alkalom, hogy elindítottad a JABA-t!"
+"Then you should make some settings first."	"Kérlek, szánj néhány percet a program beállítására."
+"You can do that step by choosing the"		"Wählen Sie die Einstellungen, die sie vornehmen"
+"settings you want to setup."				"wollen im nächsten Fenster."
+
+"You should control these settings:"			"Ezeket a beállításokat módosíthatod:"
+"Burner device"						"CD író"
+"Cdrecord options"					"Cdrecord beállítások"
+
+"Start setup"							"Beállítás"
+"Cancel setup"						"Kilépés a beállításokból"
+"_Wiz_Not_Set"						"Nem fejeztél be néhány fontos dolog beállítását!\nKésőbb is megteheted ezt a \n'Beállítások'-ra kattintva a főmenüben."
+"Start JABA"							"JABA indítása"
+
+# Info:
+"Device info"				"Eszköz információk"
+"Device type"				"Eszköz típusa"
+"Version"					"Verzió"
+"Response Format"			"Válaszformátum"
+"Capabilities"				"Képességek"
+"Vendor_info"				"Gyártó"
+"Identifikation"				"Azonosítás"
+"Revision"					"Kiadás"
+"Device seems to be"			"Úgy tűnik, az eszköz "
+"Driver flags"				"Meghajtó optionen"
+"Supported modes"			"Támogatott üzemmódok"
+"Sorry, could get no info."		"Sjnos nem lehet lekérni az információkat."
+
+"_Info_Text"	"Gebrauch:\nWählen Sie einen Modus mit den Knöpfen oder eine Funktion im Menü.\nUm Dateien oder Ordner hinzuzufügen, ziehen Sie sie einfach auf die Liste."
+
+
+
+
+
+
+

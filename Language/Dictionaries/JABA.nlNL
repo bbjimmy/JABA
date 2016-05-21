@@ -1,0 +1,884 @@
+"_key" = "50/15 preemphasis"
+"_value" = "50/15 preemphasis"
+
+
+"_key" = "About JABA"
+"_value" = "Over JABA"
+
+
+"_key" = "Adding items ..."
+"_value" = "Bestanden toevoegen ..."
+
+
+"_key" = "Allow sizes bigger than 700MB (80min)"
+"_value" = "Ondersteun schijver groter dan 700MB (80min)"
+
+
+"_key" = "An error occured!"
+"_value" = "Fout!"
+
+
+"_key" = "Audio disc"
+"_value" = "Audio schijf"
+
+
+"_key" = "Back"
+"_value" = "Terug"
+
+
+"_key" = "Be fileSystem"
+"_value" = "Be FileSystem"
+
+
+"_key" = "Best audio quality"
+"_value" = "Beste Audio kwaliteit"
+
+
+"_key" = "Blank all"
+"_value" = "Alles wissen"
+
+
+"_key" = "Blank complete disc"
+"_value" = "Volledige schijf wissen"
+
+
+"_key" = "Blank disc"
+"_value" = "Schijf wissen"
+
+
+"_key" = "Blank disc fast (delete toc)"
+"_value" = "Snel wissen (verwijder toc)"
+
+
+"_key" = "Blank fast"
+"_value" = "Snel wissen"
+
+
+"_key" = "Blank last session"
+"_value" = "Laatste sessie wissen"
+
+
+"_key" = "Blank last session of a multisession disc"
+"_value" = "Laatste sessie van een multisessie wissen"
+
+
+"_key" = "Blanked succesful!"
+"_value" = "Wissen gelukt!"
+
+
+"_key" = "Blanking ..."
+"_value" = "Wissen ..."
+
+
+"_key" = "Boot image"
+"_value" = "Boot image"
+
+
+"_key" = "Burn audio disc"
+"_value" = "Brand audio schijf"
+
+
+"_key" = "Burn cuefile"
+"_value" = "Brand cue bestand"
+
+
+"_key" = "Burn data disc"
+"_value" = "Brand data schijf"
+
+
+"_key" = "Burn image"
+"_value" = "Image branden"
+
+
+"_key" = "Burn imagefile"
+"_value" = "Image branden"
+
+
+"_key" = "Burn it!"
+"_value" = "Brand!"
+
+
+"_key" = "Burn project"
+"_value" = "Projekt branden"
+
+
+"_key" = "Burn simulation"
+"_value" = "Simulatie"
+
+
+"_key" = "Burn speed:"
+"_value" = "Brandsnelheid:"
+
+
+"_key" = "Burn!"
+"_value" = "Branden!"
+
+
+"_key" = "Burner"
+"_value" = "Brander"
+
+
+"_key" = "Burner device"
+"_value" = "Brander"
+
+
+"_key" = "Burning audiodisc ..."
+"_value" = "Brand Audio CD..."
+
+
+"_key" = "Burning datadisc ..."
+"_value" = "Brand Data CD..."
+
+
+"_key" = "Burning first session ..."
+"_value" = "Brand eerste sessie..."
+
+
+"_key" = "Burning image ..."
+"_value" = "Image branden ..."
+
+
+"_key" = "Burning new session ..."
+"_value" = "Brand nieuwe sessie..."
+
+
+"_key" = "Burning succesful!"
+"_value" = "Branden sucsesvol!"
+
+
+"_key" = "Burning tracks ..."
+"_value" = "Tracks branden ..."
+
+
+"_key" = "BurnProof"
+"_value" = "BurnProof"
+
+
+"_key" = "Cancel setup"
+"_value" = "Setup afsluiten"
+
+
+"_key" = "Cdrecord options"
+"_value" = "Cdrecord opties"
+
+
+"_key" = "Change size of fifo buffer"
+"_value" = "Fifobuffer-grootte aanpassen"
+
+
+"_key" = "Change the main color - just try it"
+"_value" = "Hoofdkleur - gewoon eens proberen"
+
+
+"_key" = "Changes will take effect on next start!"
+"_value" = "Veranderingen gaan van start bij herstarten!"
+
+
+"_key" = "Clear things up ..."
+"_value" = "Opruimen ..."
+
+
+"_key" = "Close window without saving"
+"_value" = "Venster sluiten zonder opslaan"
+
+
+"_key" = "Converting to wav ..."
+"_value" = "Konverteer naar wave ..."
+
+
+"_key" = "Copy audio disc"
+"_value" = "Kopieer Audio-schijf"
+
+
+"_key" = "Copy data disc"
+"_value" = "Kopieer Data-schijf"
+
+
+"_key" = "Copy disc"
+"_value" = "Schijf kopiëren"
+
+
+"_key" = "Copy protection"
+"_value" = "Kopiëer beveiliging"
+
+
+"_key" = "Copy!"
+"_value" = "Kopiëer!"
+
+
+"_key" = "Copying disc ..."
+"_value" = "Schijf kopie ..."
+
+
+"_key" = "Could not add"
+"_value" = "Fout bij toevoegen"
+
+
+"_key" = "Could not load project!"
+"_value" = "Kan projekt niet laden!"
+
+
+"_key" = "Could not open CUE-file!"
+"_value" = "Kan cue bestand niet openen"
+
+
+"_key" = "Could not save projectfile!"
+"_value" = "Kan projektbestand niet opslaan!"
+
+
+"_key" = "Could not save settings!"
+"_value" = "Kon de instellingen niet opslaan!"
+
+
+"_key" = "Create audio disc"
+"_value" = "Audio-schijf aanmaken"
+
+
+"_key" = "Create data disc"
+"_value" = "Data-schijf aanmaken"
+
+
+"_key" = "Create image"
+"_value" = "Image aanmaken"
+
+
+"_key" = "Create imagefile"
+"_value" = "Image aanmaken"
+
+
+"_key" = "Create it!"
+"_value" = "Maak aan!"
+
+
+"_key" = "Create link from the project folder to JABA's directory"
+"_value" = "Maak een link van de projektmap naar je JABA's map"
+
+
+"_key" = "Create multisession discs"
+"_value" = "Multisession-schijf maken"
+
+
+"_key" = "Create new folder"
+"_value" = "Nieuwe map maken"
+
+
+"_key" = "Created imagefile.\nPlease insert the target-disc now."
+"_value" = "Beeld aangemaakt.\nBreng nu de nieuwe CD in."
+
+
+"_key" = "Creating imagefile ..."
+"_value" = "Image aanmaken ..."
+
+
+"_key" = "Damned!"
+"_value" = "Jammer!"
+
+
+"_key" = "Data disc"
+"_value" = "Data schijf"
+
+
+"_key" = "Data filesystem"
+"_value" = "Data bestandssysteem"
+
+
+"_key" = "Device name"
+"_value" = "Apparaat naam"
+
+
+"_key" = "Device no"
+"_value" = "Apparaat Nr"
+
+
+"_key" = "Device seems to be"
+"_value" = "Apparaat lijkt te zijn"
+
+
+"_key" = "Device type"
+"_value" = "Apparaat type"
+
+
+"_key" = "Devices:"
+"_value" = "Apparaten:"
+
+
+"_key" = "Disc at once"
+"_value" = "Disc at once"
+
+
+"_key" = "Disc at once (else track at once - tao)"
+"_value" = "Disc at once (anders track at once - tao)"
+
+
+"_key" = "Disc size:"
+"_value" = "Schijf grootte:"
+
+
+"_key" = "Do it!"
+"_value" = "Doe het!"
+
+
+"_key" = "Don't use the standard projectfolder"
+"_value" = "Maak geen gebruik van standaard projektmap"
+
+
+"_key" = "Driver flags"
+"_value" = "Driver flags"
+
+
+"_key" = "Eject disc after burning"
+"_value" = "Uitwerpen na het branden"
+
+
+"_key" = "Eject disc when finished"
+"_value" = "Uitwerpen bij einde"
+
+
+"_key" = "Enable BurnProof"
+"_value" = "BurnProof inschakelen"
+
+
+"_key" = "Enter project name here"
+"_value" = "Hier de Projectnaam ingeven"
+
+
+"_key" = "Error creating folder!"
+"_value" = "Fout bij het aanmaken van de map!"
+
+
+"_key" = "Error creating imagefile!"
+"_value" = "Fout bij het maken van het image bestand!"
+
+
+"_key" = "Error reading cuefile!"
+"_value" = "Fout bij het lezen van cue bestand!"
+
+
+"_key" = "Error while adding"
+"_value" = "Fout bij het toevoegen"
+
+
+"_key" = "Error while blanking!"
+"_value" = "Fout bij wissen!"
+
+
+"_key" = "Error while burning!"
+"_value" = "Fout bij het branden!"
+
+
+"_key" = "Error while burning!\n"
+"_value" = "Fout bij branden!\n"
+
+
+"_key" = "Error while converting!"
+"_value" = "Fout bij konverteren!"
+
+
+"_key" = "Error while preparing!"
+"_value" = "Fout bij het klaarmaken"
+
+
+"_key" = "Error while saving projectfile!"
+"_value" = "Fout bij het opslaan van projekt bestand!"
+
+
+"_key" = "Execute burning with laser turned off"
+"_value" = "Branden met de laser uigeschakeld"
+
+
+"_key" = "Fifo buffersize:"
+"_value" = "Fifo buffergrootte:"
+
+
+"_key" = "File is no JABA-project!"
+"_value" = "Bestand is geen JABA projekt"
+
+
+"_key" = "Filesystem"
+"_value" = "Bestandsystem"
+
+
+"_key" = "Filesystem for data DVDs"
+"_value" = "Bestaendssystem voor Data-DVDs"
+
+
+"_key" = "Filesystem for video DVDs"
+"_value" = "Bestandssysteem voor Video-DVDs"
+
+
+"_key" = "Fixate"
+"_value" = "Fixeren"
+
+
+"_key" = "Fixate disc"
+"_value" = "Schijf fixeren"
+
+
+"_key" = "Fixate disc after burning"
+"_value" = "Fixeren na branden"
+
+
+"_key" = "Fixate unfixated disc"
+"_value" = "Fixeer niet gefixeerde schijf"
+
+
+"_key" = "Fixate!"
+"_value" = "Fixeer!"
+
+
+"_key" = "for"
+"_value" = "voor"
+
+
+"_key" = "Force blanking"
+"_value" = "Wissen forceren"
+
+
+"_key" = "Force blanking - even if there occur errors while blanking"
+"_value" = "Wissen forceren ook als er fouten optreden"
+
+
+"_key" = "Force blanking RW"
+"_value" = "RW wissen forceren"
+
+
+"_key" = "Full width"
+"_value" = "Vullen met"
+
+
+"_key" = "Getting info ..."
+"_value" = "Info ophalen"
+
+
+"_key" = "Go on"
+"_value" = "Verdergaan"
+
+
+"_key" = "HiFi audioburner may recognize this"
+"_value" = "Hifi-Audiobranders kunnen dit herkennen"
+
+
+"_key" = "Identifikation"
+"_value" = "Identificatie"
+
+
+"_key" = "Ignore size"
+"_value" = "Cd groote negeren"
+
+
+"_key" = "Impressive!"
+"_value" = "Indrukwekkend!"
+
+
+"_key" = "InfoPopper"
+"_value" = "InfoPopper"
+
+
+"_key" = "Interface"
+"_value" = "Omgeving"
+
+
+"_key" = "Introduction"
+"_value" = "Introductie"
+
+
+"_key" = "ISO with long filenames (up to 31 letters)"
+"_value" = "ISO met lange bestandsnamen (tot 31 letters)"
+
+
+"_key" = "ISO with short filenames (up to 8 letters + suffix)"
+"_value" = "ISO met korte bestandsnamen Dateinamen (tot 8delig + extentie)"
+
+
+"_key" = "JABA - first use setup"
+"_value" = "JABA - eerste instellingen"
+
+
+"_key" = "JABA can only create datafile images.\nPlease change to data mode."
+"_value" = "JABA kan enkel beeld maken van databestanden.\nWissel aub naar Data mode"
+
+
+"_key" = "JABA-Help"
+"_value" = "JABA help"
+
+
+"_key" = "Joliet filesystem providing long filenames (standard)"
+"_value" = "Joliet bestandssysteem ondersteund lange bestandsnamen (standaard)"
+
+
+"_key" = "Keep image and save as"
+"_value" = "Image opslaan als"
+
+
+"_key" = "Last session"
+"_value" = "Laatste sessie"
+
+
+"_key" = "Link to JABA's directory"
+"_value" = "Link naar JABA's map"
+
+
+"_key" = "Loaded audiofiles.\nPlease insert the target-disc now."
+"_value" = "Audio bestanden geladen.\nBreng nu de nieuwe CD in."
+
+
+"_key" = "Main color:"
+"_value" = "Hoofdkleur:"
+
+
+"_key" = "Makes the main window full resizable"
+"_value" = "Maak het hoofdvenster volledig schaalbaar"
+
+
+"_key" = "Move down"
+"_value" = "Verplaats omlaag"
+
+
+"_key" = "Move selected file down"
+"_value" = "Geselecteerd bestand omlaag"
+
+
+"_key" = "Move selected file up"
+"_value" = "Verplaats geselecteerd bestand omhoog"
+
+
+"_key" = "Move up"
+"_value" = "Verplaats omhoog"
+
+
+"_key" = "Multisession"
+"_value" = "Multisession"
+
+
+"_key" = "New project"
+"_value" = "Nieuw Projekt"
+
+
+"_key" = "No Audiofile!"
+"_value" = "Geen Audio bestand!"
+
+
+"_key" = "No drive"
+"_value" = "Geen apparaat"
+
+
+"_key" = "No file information found in CUE-file!"
+"_value" = "Geen informatie in het cue bestand gevonden!"
+
+
+"_key" = "Not enough free disk space for creating the image!"
+"_value" = "Niet voldoende plaats om een image aan te maken!"
+
+
+"_key" = "Note: JABA can only read images from data discs!!"
+"_value" = "Nota: JABA kan images enkel van data schijven lezen!!"
+
+
+"_key" = "Number of files:"
+"_value" = "Aantal bestanden:"
+
+
+"_key" = "Number of folders:"
+"_value" = "Aantal mappen:"
+
+
+"_key" = "On the fly"
+"_value" = "1:1 Kopie"
+
+
+"_key" = "One directory up"
+"_value" = "Een map omhoog"
+
+
+"_key" = "Open project"
+"_value" = "Projekt openen"
+
+
+"_key" = "Own projectpath"
+"_value" = "Eigen projekt pad"
+
+
+"_key" = "Play soundfile"
+"_value" = "Bestand afspelen"
+
+
+"_key" = "Please drop files/folders here to get them into the list"
+"_value" = "Hier bestanden slepen om hen toe te voegen aan de lijst"
+
+
+"_key" = "Please drop only audiofiles in audiomode!"
+"_value" = "Gelieve enkel audiobestanden te slepen in Audio modus!"
+
+
+"_key" = "Please drop some files into the window first."
+"_value" = "Sleep enkele bestanden naar het venster."
+
+
+"_key" = "Please select a mode first."
+"_value" = "Selecteer eerst een mode."
+
+
+"_key" = "Please select a mode!"
+"_value" = "Selecteer eerst een modus!"
+
+
+"_key" = "Please select your burner:"
+"_value" = "Selecteer uw brander:"
+
+
+"_key" = "Prepare ..."
+"_value" = "Klaarmaken ..."
+
+
+"_key" = "Prepare multisession ..."
+"_value" = "Brand MultiSessie..."
+
+
+"_key" = "Project name:"
+"_value" = "Projektnaam:"
+
+
+"_key" = "Project settings:"
+"_value" = "Projekt:"
+
+
+"_key" = "Projectpath:"
+"_value" = "Projekt pad:"
+
+
+"_key" = "Quit when finished"
+"_value" = "Afsluiten bij einde"
+
+
+"_key" = "Read disc image"
+"_value" = "Image van schijf lezen"
+
+
+"_key" = "Read from:"
+"_value" = "Lees van:"
+
+
+"_key" = "Read image from disc"
+"_value" = "Image van schijf lezen"
+
+
+"_key" = "Read it!"
+"_value" = "Lees het!"
+
+
+"_key" = "Reading audiofiles ..."
+"_value" = "Lees Audio bestanden ..."
+
+
+"_key" = "Reading imagefile ..."
+"_value" = "Lees image bestand ..."
+
+
+"_key" = "Ready!"
+"_value" = "Klaar!"
+
+
+"_key" = "Remove all"
+"_value" = "Alles verwijderen"
+
+
+"_key" = "Remove file"
+"_value" = "Bestand verwijderen"
+
+
+"_key" = "Remove fixation from last session"
+"_value" = "Verwijder fixatie van laatste sessie"
+
+
+"_key" = "Remove selected file from list"
+"_value" = "Verwijder geselecteerd bestand van de lijst"
+
+
+"_key" = "Required files not found!"
+"_value" = "Benodigde bestanden niet gevonden!"
+
+
+"_key" = "Response Format"
+"_value" = "Responce formaat"
+
+
+"_key" = "Revision"
+"_value" = "Revisie"
+
+
+"_key" = "Save changes and close window"
+"_value" = "Veranderingen opslaan en venster sluiten"
+
+
+"_key" = "Save project"
+"_value" = "Projekt opslaan"
+
+
+"_key" = "Save project as"
+"_value" = "Projekt opslaan als"
+
+
+"_key" = "Select the device to copy from"
+"_value" = "Bron apparaat waarvan gekopiëerd word"
+
+
+"_key" = "Select the device to read from"
+"_value" = "Bron apparaat waarvan gelezen word"
+
+
+"_key" = "Select your burner device"
+"_value" = "Selecteer uw brander"
+
+
+"_key" = "Set defaults"
+"_value" = "Standaarkleuren"
+
+
+"_key" = "Set the speed for burning"
+"_value" = "Brand snelheid instellen"
+
+
+"_key" = "settings you want to setup."
+"_value" = "de instellingen die je wil instellen."
+
+
+"_key" = "Show names"
+"_value" = "Toon namen"
+
+
+"_key" = "Show paths"
+"_value" = "Toon paden"
+
+
+"_key" = "Shows the path you're watching the content of"
+"_value" = "Toont het pad van de lijst due u nu bekijkt"
+
+
+"_key" = "Shows used space on the disc to be burned"
+"_value" = "Toont gebruikte ruimte op de schijf om te branden"
+
+
+"_key" = "Simple GUI"
+"_value" = "Eenvoudig"
+
+
+"_key" = "Some files may not be added!"
+"_value" = "Enkele bestanden zijn kunnen niet toegevoegd zijn!"
+
+
+"_key" = "Sorry, could get no info."
+"_value" = "Sorry geen info beschikbaar"
+
+
+"_key" = "Sorry, not implemented yet!"
+"_value" = "Nog niet geintegreerd!"
+
+
+"_key" = "Standard GUI"
+"_value" = "Standaard"
+
+
+"_key" = "Start JABA"
+"_value" = "Start JABA"
+
+
+"_key" = "Start setup"
+"_value" = "Start Setup"
+
+
+"_key" = "Streaming"
+"_value" = "Streaming"
+
+
+"_key" = "Supported modes"
+"_value" = "Ondersteunde modes"
+
+
+"_key" = "The project folder where you have acces to by default"
+"_value" = "De projektmap waar je standaard gebruik van maakt"
+
+
+"_key" = "The simple GUI"
+"_value" = "Eenvoudig thema"
+
+
+"_key" = "The standard GUI"
+"_value" = "Standaard thema"
+
+
+"_key" = "Then you should make some settings first."
+"_value" = "Dan moet je eerst enkele instellingen nakijken."
+
+
+"_key" = "This is the first time you use JABA!"
+"_value" = "Je hebt JABA voor het eerst gestart!"
+
+
+"_key" = "Tooltips"
+"_value" = "Tip vermeldingen"
+
+
+"_key" = "Turn InfoPopper support on or off"
+"_value" = "Zet ondersteuning voor InfoPopper aan of uit"
+
+
+"_key" = "Type in the name for the new folder:"
+"_value" = "Typ de naam voor de nieuwe map:"
+
+
+"_key" = "UDF (Data-DVD)"
+"_value" = "UDF (Data-DVD)"
+
+
+"_key" = "UDF (Video-DVD)"
+"_value" = "UDF (Video-DVD)"
+
+
+"_key" = "Unclose last session"
+"_value" = "Laatste gesloten sessie openen"
+
+
+"_key" = "Use error correction while copying audio discs"
+"_value" = "Gebruik foutcorrectie bij het kopiëren van Audio CD's"
+
+
+"_key" = "Vendor_info"
+"_value" = "Fabrikant info"
+
+
+"_key" = "Welcome to JABA!"
+"_value" = "Welkom bij JABA"
+
+
+"_key" = "When this is on, you can read this"
+"_value" = "Als dit aanstaat kan je dit lezen"
+
+
+"_key" = "Write data direct to the disc"
+"_value" = "Schrijf data direct naar schijf"
+
+
+"_key" = "Writes info to toc, that audiofiles have been recorded with preemphasis - does not affect the files!"
+"_value" = "Schrijft info naar toc, dat audiobestanden met preemphasis gebrand zijn heeft geen effect op de bestandn!"
+
+
+"_key" = "You can do that step by choosing the"
+"_value" = "Je kan dit doen door het kiezen van"
+
+
+"_key" = "You should control these settings:"
+"_value" = "Deze instellingen moet je kontrolleren:"
+
+
+"_key" = "_Info_Text"
+"_value" = "Gebruik:\nSelecteer een mode via de knoppen of een functie in het menu.\nOm bestanden of mappen toe te voegen, gewoon slepen en laten vallen in de lijst."
+
+
+"_key" = "_Save_Or_Not"
+"_value" = "Je kan je project opslaan,\n klik op 'Terug'"
+
+
+"_key" = "_Wiz_Not_Set"
+"_value" = "Je hebt niet alle instellingen ingevuld!\nJe kan dit later voltooing in het instellingen menu."
+
+

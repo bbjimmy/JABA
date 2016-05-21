@@ -1,0 +1,150 @@
+This is pdfTeX, Version 3.14159-1.10b (Web2C 7.4.5) (format=pdflatex 2004.5.18)  17 DEC 2007 23:51
+**JABA-Help.tex
+(./JABA-Help.tex{/boot/home/config/teTeX/share/texmf/pdftex/config/pdftex.cfg}
+LaTeX2e <2001/06/01>
+Babel <v3.7h> and hyphenation patterns for american, french, german, ngerman, n
+ohyphenation, loaded.
+(/boot/home/config/teTeX/share/texmf/tex/latex/base/article.cls
+Document Class: article 2001/04/21 v1.4e Standard LaTeX document class
+(/boot/home/config/teTeX/share/texmf/tex/latex/base/size11.clo
+File: size11.clo 2001/04/21 v1.4e Standard LaTeX file (size option)
+)
+\c@part=\count79
+\c@section=\count80
+\c@subsection=\count81
+\c@subsubsection=\count82
+\c@paragraph=\count83
+\c@subparagraph=\count84
+\c@figure=\count85
+\c@table=\count86
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+(/boot/home/config/teTeX/share/texmf/tex/latex/graphics/color.sty
+Package: color 1999/02/16 v1.0i Standard LaTeX Color (DPC)
+
+(/boot/home/config/teTeX/share/texmf/tex/latex/config/color.cfg
+File: color.cfg 2001/08/31 v1.1 color configuration of teTeX/TeXLive
+)
+Package color Info: Driver file: pdftex.def on input line 125.
+
+(/boot/home/config/teTeX/share/texmf/tex/latex/graphics/pdftex.def
+File: pdftex.def 2002/06/19 v0.03k graphics/color for pdftex
+\Gread@gobject=\count87
+))
+(/boot/home/config/teTeX/share/texmf/tex/latex/graphics/graphicx.sty
+Package: graphicx 1999/02/16 v1.0f Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/boot/home/config/teTeX/share/texmf/tex/latex/graphics/keyval.sty
+Package: keyval 1999/03/16 v1.13 key=value parser (DPC)
+\KV@toks@=\toks14
+)
+(/boot/home/config/teTeX/share/texmf/tex/latex/graphics/graphics.sty
+Package: graphics 2001/07/07 v1.0n Standard LaTeX Graphics (DPC,SPQR)
+
+(/boot/home/config/teTeX/share/texmf/tex/latex/graphics/trig.sty
+Package: trig 1999/03/16 v1.09 sin cos tan (DPC)
+)
+(/boot/home/config/teTeX/share/texmf/tex/latex/config/graphics.cfg
+File: graphics.cfg 2001/08/31 v1.1 graphics configuration of teTeX/TeXLive
+)
+Package graphics Info: Driver file: pdftex.def on input line 80.
+)
+\Gin@req@height=\dimen103
+\Gin@req@width=\dimen104
+)
+(./JABA-Help.aux)
+\openout1 = `JABA-Help.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 9.
+LaTeX Font Info:    ... okay on input line 9.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 9.
+LaTeX Font Info:    ... okay on input line 9.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 9.
+LaTeX Font Info:    ... okay on input line 9.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 9.
+LaTeX Font Info:    ... okay on input line 9.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 9.
+LaTeX Font Info:    ... okay on input line 9.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 9.
+LaTeX Font Info:    ... okay on input line 9.
+
+(/boot/home/config/teTeX/share/texmf/tex/context/base/supp-pdf.tex
+(/boot/home/config/teTeX/share/texmf/tex/context/base/supp-mis.tex
+loading : Context Support Macros / Missing
+\protectiondepth=\count88
+\scratchcounter=\count89
+\scratchtoks=\toks15
+\scratchdimen=\dimen105
+\scratchskip=\skip43
+\scratchmuskip=\muskip10
+\scratchbox=\box26
+\scratchread=\read1
+\scratchwrite=\write3
+\zeropoint=\dimen106
+\minusone=\count90
+\thousandpoint=\dimen107
+\emptytoks=\toks16
+\nextbox=\box27
+\nextdepth=\dimen108
+\everyline=\toks17
+\!!counta=\count91
+\!!countb=\count92
+\recursecounter=\count93
+)
+loading : Context Support Macros / PDF
+\nofMPsegments=\count94
+\nofMParguments=\count95
+\everyMPtoPDFconversion=\toks18
+)
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <12> on input line 15.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 15.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 15.
+ [1
+
+{/boot/home/config/teTeX/share/texmf/dvips/config/pdftex.map}]
+(./JABA-Help.toc
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <10.95> on input line 2.
+)
+\tf@toc=\write4
+\openout4 = `JABA-Help.toc'.
+
+ [2]
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <9> on input line 33.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 33.
+ <startsetup1.png, id=23, 453.695pt x 309.155pt>
+File: startsetup1.png Graphic file (type png)
+
+<use startsetup1.png> [3 <./startsetup1.png>]
+<startsetup2.png, id=36, 462.72874pt x 313.17pt>
+File: startsetup2.png Graphic file (type png)
+ <use startsetup2.png> [4 <./startsetup2.png>] [5] [6] [7] [8] [9] (./JABA-Help
+.aux) ) 
+Here is how much of TeX's memory you used:
+ 966 strings out of 95437
+ 12131 string characters out of 1189055
+ 61169 words of memory out of 1000001
+ 3997 multiletter control sequences out of 10000+50000
+ 9890 words of font info for 35 fonts, out of 500000 for 1000
+ 14 hyphenation exceptions out of 1000
+ 25i,8n,21p,402b,213s stack positions out of 1500i,500n,5000p,200000b,5000s
+ 55 PDF objects out of 300000
+ 0 named destinations out of 131072
+ 10 words of extra memory for PDF output out of 65536
+{/boot/home/config/teTeX/share/texmf/dvips/tetex/09fbbfac.enc}</boot/hom
+e/config/teTeX/share/texmf/fonts/type1/bluesky/cm/cmtt9.pfb>{/boot/home/config/
+teTeX/share/texmf/dvips/tetex/f7b6d320.enc}</boot/home/config/teTeX/share/texmf
+/fonts/type1/bluesky/cm/cmr6.pfb></boot/home/config/teTeX/share/texmf/fonts/typ
+e1/bluesky/cm/cmr8.pfb></boot/home/config/teTeX/share/texmf/fonts/type1/bluesky
+/cm/cmr10.pfb></boot/home/config/teTeX/share/texmf/fonts/type1/bluesky/cm/cmbx1
+0.pfb></boot/home/config/teTeX/share/texmf/fonts/type1/bluesky/cm/cmbx12.pfb></
+boot/home/config/teTeX/share/texmf/fonts/type1/bluesky/cm/cmr12.pfb></boot/home
+/config/teTeX/share/texmf/fonts/type1/bluesky/cm/cmr17.pfb>
+Output written on JABA-Help.pdf (9 pages, 96175 bytes).
